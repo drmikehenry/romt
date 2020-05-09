@@ -1,0 +1,7 @@
+# GitPython >= 3.0.5 is required to avoid this traceback on Windows:
+#   Exception ignored in: <function Git.AutoInterrupt.__del__ at 0x...>
+# See https://github.com/gitpython-developers/GitPython/issues/935.
+gitpython==3.0.5
+python-gnupg==0.4.6
+requests==2.22.0
+toml==0.10.0

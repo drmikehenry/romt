@@ -1,0 +1,12 @@
+*.egg-info/
+*.pyc
+.mypy_cache/
+/.coverage
+/.coverage.py*
+/.tox/
+/build/
+/fake/
+/htmlcov/
+/mirror/
+/toolchain.tar.gz
+__pycache__/

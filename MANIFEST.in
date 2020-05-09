@@ -1,0 +1,5 @@
+recursive-include tests *.py
+include LICENSE.rst
+include CHANGES.rst
+include requirements.txt
+include dev-requirements.txt
