@@ -4,10 +4,12 @@
 import setuptools
 
 NAME = "romt"
+
 description = """
-Romt (Rust Offline Mirror Tool) enables mirroring of Rust programming language
-tools and crates for use in an offline context.
-"""
+Romt (Rust Offline Mirror Tool) enables mirroring of Rust programming
+language tools and crates for use in an offline context.
+""".strip().replace("\n", " ")
+
 keywords = "Rust mirror toolchain crates"
 
 
