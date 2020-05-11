@@ -11,7 +11,7 @@ import romt.rustup
 import romt.serve
 import romt.toolchain
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 project_name = "romt"
 
@@ -26,7 +26,8 @@ See ``{project_name} --readme`` for more details.
 )
 
 
-def readme() -> None:
+def readme_from_pkg_resources() -> str:
+    # This method works when the package is properly installed via "pip".
     import pkg_resources
     import email
     import textwrap
@@ -35,19 +36,36 @@ def readme() -> None:
         dist = pkg_resources.get_distribution(project_name)
         meta = dist.get_metadata(dist.PKG_INFO)
     except (pkg_resources.DistributionNotFound, FileNotFoundError):
-        common.eprint(
-            "Cannot access README (try installing via pip or setup.py)"
-        )
-        sys.exit(1)
+        return ""
     msg = email.message_from_string(meta)
     desc = msg.get("Description", "").strip()
     if not desc and not msg.is_multipart():
         desc = msg.get_payload().strip()
-    if not desc:
-        desc = "No README found"
     if "\n" in desc:
         first, rest = desc.split("\n", 1)
         desc = "\n".join([first, textwrap.dedent(rest)])
+    return desc
+
+
+def readme_from_file() -> str:
+    # This method works with PyInstaller.
+    import pkgutil
+    text = ""
+    try:
+        readme = pkgutil.get_data("romt", "README.rst")
+        if readme is not None:
+            text = readme.decode("utf-8")
+    except FileNotFoundError:
+        text = ""
+    return text
+
+
+def readme() -> None:
+    desc = readme_from_pkg_resources()
+    if not desc:
+        desc = readme_from_file()
+    if not desc:
+        desc = "README.rst is not available."
     common.iprint(desc)
 
 

@@ -2,6 +2,11 @@
 History
 *******
 
+Version 0.1.2
+=============
+
+- Add support for single-file executables using PyInstaller.
+
 Version 0.1.1
 =============
 
