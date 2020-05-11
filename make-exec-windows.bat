@@ -1,3 +1,5 @@
+@echo off
+
 pyinstaller ^
     --onefile ^
     --name romt ^
@@ -6,4 +8,5 @@ pyinstaller ^
     --workpath build\windows ^
     --hidden-import pkg_resources.py2_warn ^
     --add-data="../../README.rst;romt" ^
+    --log-level WARN ^
     romt-wrapper.py
