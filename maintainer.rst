@@ -4,44 +4,14 @@ Maintainer's notes
 
 These notes are intended for use by the maintainer.
 
-Development environment setup
-=============================
-
-- Ensure Python and Pip and installed.
-
-- Create and activate a virtual environment for your platform:
-
-  - Linux:
-
-  .. code-block:: sh
-
-    python -m venv envs/linux
-    . envs/linux/bin/activate
-
-  - Windows:
-
-  .. code-block:: sh
-
-    py -3 -m venv envs\windows
-    envs\windows\Scripts\activate.bat
-
-  - Mac:
-
-  .. code-block:: sh
-
-    python -m venv envs/darwin
-    . envs/darwin/bin/activate
-
-- Install Romt in development mode:
-
-  .. code-block:: sh
-
-    pip install -e ".[dev]"
-
 Making a release
 ================
 
+- Activate the ``romt`` virtual environment.
+
 - Verify proper ``__version__`` in ``src/romt/cli.py``.
+
+- Verify changes are recorded in ``CHANGES.rst``.
 
 - On Linux, run:
 

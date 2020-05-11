@@ -41,6 +41,8 @@ Requirements
 - Internet-connected computer for initial downloading (Linux, Windows, Mac
   [#]_).
 - Offline computer for serving artifacts (Linux, Windows, Mac).
+- [Optional] Gnu Privacy Guard (GPG), if installed, is used used for signature
+  checking.
 
 .. [#] Note: the author does not have access to a Mac, so support for Romt on
    Mac is untested but hopefully close to working.  Pull requests for
@@ -49,50 +51,10 @@ Requirements
 Romt installation
 =================
 
-Romt is available in the Python Package Index (PyPI).  For machines with direct
-Internet access, installation is straightforward; for machines on a disconnected
-network, more steps are required.
+Install prerequisites
+---------------------
 
-With direct Internet access
----------------------------
-
-- Install directly from PyPI:
-
-  .. code-block:: sh
-
-    pip install --user romt
-
-On a disconnected Network
--------------------------
-
-- Download ``romt`` with dependencies (from Internet-connected machine):
-
-  .. code-block:: sh
-
-    mkdir romt
-    cd romt
-    pip download romt
-
-- Transfer the ``romt`` directory to a machine on the disconnected network.
-
-- Install from the ``romt`` directory:
-
-  .. code-block:: sh
-
-    cd romt
-    pip install --user --no-index --find-links . romt
-
-For all scenarios
------------------
-
-- After installation, ensure that the ``PATH`` contains the directory holding
-  installed Python packages::
-
-    # For Linux:
-    ~/.local/bin
-
-    # For Windows with Python version X.Y:
-    %APPDATA%\Python\PythonXY\Scripts
+First install prerequisites for Romt:
 
 - Ensure Git is installed; it is required for proper manipulation of the
   crates.io-index repository.
@@ -100,6 +62,128 @@ For all scenarios
 - For signature checking, GNU Privacy Guard (gpg) should be installed as well.
   If gpg is not available, signature files (``*.asc``) will still be transferred
   but signature checking will be skipped.
+
+Next, choose an option for installation of Romt itself.
+
+Option 1: Install a pre-built executable
+----------------------------------------
+
+The simplest method of installation is to use a pre-built self-contained
+executable from the Github release area:
+https://github.com/drmikehenry/romt/releases
+
+Option 2: Install from Python Package Index
+-------------------------------------------
+
+Romt is also available in the Python Package Index (PyPI).  For machines with
+direct Internet access, installation is straightforward; for machines on a
+disconnected network, more steps are required.
+
+First ensure that the ``PATH`` contains the directory that holds installed
+Python packages::
+
+    # For Linux:
+    ~/.local/bin
+
+    # For Windows with Python version X.Y:
+    %APPDATA%\Python\PythonXY\Scripts
+
+Next, choose installation method based on access to the Internet:
+
+- With direct Internet access:
+
+  - Install directly from PyPI:
+
+    .. code-block:: sh
+
+      pip install --user romt
+
+- On a disconnected Network:
+
+  - Download ``romt`` with dependencies (from Internet-connected machine):
+
+    .. code-block:: sh
+
+      mkdir romt
+      cd romt
+      pip download romt
+
+  - Transfer the ``romt`` directory to a machine on the disconnected network.
+
+  - Install from the ``romt`` directory:
+
+    .. code-block:: sh
+
+      cd romt
+      pip install --user --no-index --find-links . romt
+
+Option 3: Work with source
+--------------------------
+
+If desired, the source may be cloned from Github and installed into a virtual
+environment.
+
+- Clone source:
+
+  .. code-block:: sh
+
+    git clone https://github.com/drmikehenry/romt
+    cd romt
+
+- Create and activate a virtual environment for your platform:
+
+  - Linux:
+
+  .. code-block:: sh
+
+    python -m venv envs/linux
+    . envs/linux/bin/activate
+
+  - Windows:
+
+  .. code-block:: sh
+
+    py -3 -m venv envs\windows
+    envs\windows\Scripts\activate.bat
+
+  - Mac:
+
+  .. code-block:: sh
+
+    python -m venv envs/darwin
+    . envs/darwin/bin/activate
+
+- Install Romt in development mode:
+
+  .. code-block:: sh
+
+    pip install -e ".[dev]"
+
+- Optionally build an executable for your platform:
+
+  - Linux:
+
+  .. code-block:: sh
+
+    ./make-exec-linux.sh
+
+  - Windows:
+
+  .. code-block:: sh
+
+    make-exec-windows.bat
+
+  - Mac:
+
+  .. code-block:: sh
+
+    ./make-exec-darwin.sh
+
+  Find executables at::
+
+    dist/linux/romt
+    dist/windows/romt.exe
+    dist/darwin/romt
 
 Romt usage overview
 ===================
