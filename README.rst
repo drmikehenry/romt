@@ -1507,29 +1507,53 @@ For this purpose, ``romt serve`` uses a ``cgi-bin/`` directory in the current
 working directory to interface via CGI with ``git-http-backend``.
 
 Upon launching ``romt serve``, Romt searches for one of the following files in
-``cgi-bin/``::
+``cgi-bin/`` (depending on the platform):
 
-  git-http-backend
-  git-http-backend.exe
-  git-http-backend.py
+  - On Windows::
+
+      git-http-backend.bat
+      git-http-backend.exe
+
+  - On non-Windows::
+
+      git-http-backend.sh
+      git-http-backend
 
 If found, Romt will use that file for serving Git repositories via CGI.  If not
 found, Romt will look in known locations for the ``git-http-backend`` executable
-and create ``cgi-bin/git-http-backend.py`` as a wrapper to invoke the
-executable.
+and create a platform-dependent wrapper script in ``cgi-bin/`` to invoke the
+executable; the script is named ``git-http-backend.bat`` on Windows and
+``git-http-backend.sh`` on non-Windows.
 
-Currently, Romt probes for the backend in these hard-coded locations:
+Currently, Romt probes for the backend in these hard-coded locations (depending
+on the platform):
 
-- ``/usr/lib/git-core/git-http-backend``
-- ``C:/Program Files/Git/mingw64/libexec/git-core/git-http-backend.exe``
+- On Windows:
 
-To manually setup the Git backend, create the file
-``cgi-bin/git-http-backend.py`` with contents similar to this example:
+  - ``C:/Program Files/Git/mingw64/libexec/git-core/git-http-backend.exe``
 
-.. code-block:: python
+- On non-Windows:
 
-  import subprocess
-  subprocess.call("/path/to/git-http-backend")
+  - ``/usr/lib/git-core/git-http-backend``
+
+To manually setup the Git backend, create a script file in ``cgi-bin/`` with
+contents similar to these examples (depending on platform):
+
+- On Windows, create ``cgi-bin/git-http-backend.bat`` with contents::
+
+    @echo off
+    "C:\Program Files\Git\mingw64\libexec\git-core\git-http-backend.exe"
+
+- On non-Windows, create ``cgi-bin/git-http-backend.sh`` with contents::
+
+    #!/bin/sh
+    exec '/usr/lib/git-core/git-http-backend'
+
+  Then make the script executable:
+
+  .. code-block:: sh
+
+    chmod +x cgi-bin/git-http-backend.sh
 
 nginx configuration
 ===================

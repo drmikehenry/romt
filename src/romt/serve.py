@@ -41,11 +41,17 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 
 def find_git_cgi_path() -> Optional[Path]:
     cgi_path = Path("cgi-bin")
-    for git_cgi_name in [
-        "git-http-backend",
-        "git-http-backend.exe",
-        "git-http-backend.py",
-    ]:
+    if common.is_windows:
+        candidates = [
+            "git-http-backend.exe",
+            "git-http-backend.bat",
+        ]
+    else:
+        candidates = [
+            "git-http-backend.sh",
+            "git-http-backend",
+        ]
+    for git_cgi_name in candidates:
         git_path = cgi_path / git_cgi_name
         if git_path.is_file():
             return git_path
@@ -113,10 +119,60 @@ setattr(Handler, "do_GET", Handler.do_get)
 setattr(Handler, "do_HEAD", Handler.do_head)
 setattr(Handler, "do_POST", Handler.do_post)
 
-GIT_HTTP_BACKEND_SOURCES = [
-    "/usr/lib/git-core/git-http-backend",
-    "C:/Program Files/Git/mingw64/libexec/git-core/git-http-backend.exe",
-]
+if common.is_windows:
+    GIT_HTTP_BACKEND_SOURCES = [
+        "C:/Program Files/Git/mingw64/libexec/git-core/git-http-backend.exe",
+    ]
+else:
+    GIT_HTTP_BACKEND_SOURCES = [
+        "/usr/lib/git-core/git-http-backend",
+    ]
+
+
+def get_git_http_backend_path() -> Optional[Path]:
+    for source in GIT_HTTP_BACKEND_SOURCES:
+        source_path = Path(source)
+        if source_path.is_file():
+            return source_path
+    return None
+
+
+def make_git_cgi_script(git_http_backend_path: Path) -> None:
+    cgi_path = Path("cgi-bin")
+    if not cgi_path.is_dir():
+        common.iprint("mkdir {}".format(cgi_path))
+        cgi_path.mkdir()
+    if common.is_windows:
+        extension = ".bat"
+        template = '@echo off\n"{}"\n'
+    else:
+        extension = ".sh"
+        template = "#!/bin/sh\nexec '{}'\n"
+    script_path = cgi_path / ("git-http-backend" + extension)
+    script = template.format(git_http_backend_path)
+    common.iprint("Create script {} ({})".format(script_path, repr(script)))
+    script_path.write_text(script, encoding="utf-8")
+    if not common.is_windows:
+        common.chmod_executable(script_path)
+
+
+def setup_git_cgi() -> None:
+    os.environ["GIT_HTTP_EXPORT_ALL"] = ""
+    os.environ["GIT_PROJECT_ROOT"] = os.path.abspath("git")
+
+    git_cgi_path = find_git_cgi_path()
+    if git_cgi_path:
+        if not common.is_windows and not common.is_executable(git_cgi_path):
+            common.eprint(
+                "Warning: setting executable flag on {}".format(git_cgi_path)
+            )
+            common.chmod_executable(git_cgi_path)
+    else:
+        git_http_backend_path = get_git_http_backend_path()
+        if git_http_backend_path:
+            make_git_cgi_script(git_http_backend_path)
+        else:
+            common.eprint("Warning: missing git-http-backend; no Git support")
 
 
 class Main:
@@ -125,33 +181,7 @@ class Main:
 
     def run(self) -> None:
         common.iprint("server running")
-        os.environ["GIT_HTTP_EXPORT_ALL"] = ""
-        os.environ["GIT_PROJECT_ROOT"] = os.path.abspath("git")
-
-        git_cgi_path = find_git_cgi_path()
-        if git_cgi_path is None:
-            for source in GIT_HTTP_BACKEND_SOURCES:
-                source_path = Path(source)
-                if source_path.is_file():
-                    cgi_path = Path("cgi-bin")
-                    if not cgi_path.is_dir():
-                        common.iprint("mkdir {}".format(cgi_path))
-                        cgi_path.mkdir()
-                    script = "import subprocess; subprocess.call({})".format(
-                        repr(str(source_path))
-                    )
-                    script_path = cgi_path / "git-http-backend.py"
-                    common.iprint(
-                        "Create script {} ({})".format(
-                            script_path, repr(script)
-                        )
-                    )
-                    script_path.write_text(script, encoding="utf-8")
-                    break
-            else:
-                common.eprint(
-                    "Warning: could not setup cgi-bin/git-http-backend"
-                )
+        setup_git_cgi()
 
         # Avoid type hint warning about missing http.server.test by
         # using getattr() to fetch the function.

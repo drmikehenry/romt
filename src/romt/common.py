@@ -3,10 +3,16 @@
 
 from contextlib import contextmanager
 import datetime
+import os
 from pathlib import Path
+import platform
 import re
+import stat
 import tarfile
 from typing import Any, Generator, IO, Iterable, List, Optional, Tuple
+
+
+is_windows = platform.system() == "Windows"
 
 
 VERBOSITY_ERROR = 0
@@ -79,6 +85,21 @@ def path_modified_today(path: Path) -> bool:
     else:
         modified_today = False
     return modified_today
+
+
+def get_umask() -> int:
+    umask = os.umask(0)
+    os.umask(umask)
+    return umask
+
+
+def is_executable(path: Path) -> bool:
+    return os.access(str(path), os.X_OK)
+
+
+def chmod_executable(path: Path) -> None:
+    x_bits = (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH) & ~get_umask()
+    os.chmod(str(path), path.stat().st_mode | x_bits)
 
 
 def gen_dirs(parent: Path) -> Generator[Path, None, None]:
