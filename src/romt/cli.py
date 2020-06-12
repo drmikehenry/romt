@@ -11,7 +11,7 @@ import romt.rustup
 import romt.serve
 import romt.toolchain
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 project_name = "romt"
 
@@ -52,7 +52,7 @@ def readme_from_file() -> str:
     import pkgutil
     text = ""
     try:
-        readme = pkgutil.get_data("romt", "README.rst")
+        readme = pkgutil.get_data(project_name, "README.rst")
         if readme is not None:
             text = readme.decode("utf-8")
     except FileNotFoundError:
