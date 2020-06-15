@@ -2,6 +2,24 @@
 History
 *******
 
+Version 0.2.0
+=============
+
+- Switch to using a ``working`` branch as ``HEAD`` for the INDEX
+  (crates.io-index) repository.  This ensures that partial modifications to
+  INDEX aren't made available to clients on the ``master`` branch; these changes
+  will be published atomically to ``master`` via the ``mark`` command.  Romt
+  will automatically and transparently attempt to upgrade INDEX to use a
+  ``working`` branch as part of the ``pull`` command.  See the description of
+  the ``pull`` command in README.rst for more details.  As part of this work:
+
+  - The ``--end`` switch now defaults to ``HEAD`` instead of ``master``, such
+    that END uses the currently checked out branch (typically this
+    will now be the ``working`` branch).
+
+  - In addition to setting the ``mark`` branch, the ``mark`` command now also
+    sets the ``master`` branch.
+
 Version 0.1.3
 =============
 

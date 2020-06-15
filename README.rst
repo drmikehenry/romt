@@ -1132,6 +1132,12 @@ It uses the following branches:
 
     A branch for tracking progress (detailed later).
 
+- ``working``
+
+    A branch checked out to the working tree and used for merging and
+    modifying repository content; changes are then published atomically to the
+    ``master`` branch to avoid race conditions.
+
 INDEX file structure
 --------------------
 
@@ -1293,9 +1299,10 @@ rest of the URL is hard-coded to match the conventions of ``romt serve``.
 However, any changes manually committed to ``config.json`` will be preserved by
 subsequent Romt operations.
 
-Changes to ``config.json`` are committed to the local ``master`` branch.  As
-upstream commits are merged into ``master``, Romt will ensure that the
-local ``config.json`` changes take precedence over possible upstream changes.
+Changes to ``config.json`` are committed to the local ``working`` branch, and
+ultimately published to the local ``master`` branch (via the ``mark`` command).
+As upstream commits are merged into ``master``, Romt will ensure that the local
+``config.json`` changes take precedence over possible upstream changes.
 
 ``mark``
 --------
@@ -1304,10 +1311,16 @@ Romt uses a branch named ``mark`` as a commit placeholder within INDEX.  It
 tracks progress through the INDEX, marking one operation's END commit for use as
 the next operation's START commit.
 
-The ``romt crate mark`` command sets the ``mark`` branch to the commit indicated
-by END.  START defaults to ``mark`` such that subsequent operations pick up
-where previous ones left off.  END defaults to ``master`` such that RANGE
-includes all unprocessed commits.
+The ``romt crate mark`` command sets both the ``mark`` branch and the ``master``
+branch to the commit indicated by END.  START defaults to ``mark`` such that
+subsequent operations pick up where previous ones left off.  END defaults to
+``HEAD`` (generally the ``working`` branch) such that RANGE includes all
+unprocessed commits.
+
+Note that working copy modifications (merges and edits) are done on the
+``working`` branch.  Changes won't be visible on the ``master`` branch until
+after the ``mark`` command is executed, ensuring clients won't see partially
+complete modifications while the repository is being updated.
 
 Pulling INDEX commits
 ---------------------
@@ -1316,11 +1329,23 @@ Before downloading crate files, the INDEX must be updated.  The ``romt crate
 pull`` command fetches the latest commits from INDEX's ``origin`` remote into
 the ``remotes/origin/master`` branch, then marks this location in the local
 branch ``origin_master`` for convenience of reference.  The fetched commits are
-then merged into the local ``master`` branch, preserving any local modifications
-that may have been made to ``config.json``.  If the merge operation fails, the
-working copy is reset to ``remotes/origin/master`` and any local changes to
-``config.json`` that may have been present in ``master`` before the pull are
-re-applied.
+then merged into the HEAD branch (typically ``working``), preserving any local
+modifications that may have been made to ``config.json``.  If the merge
+operation fails, the working copy is reset to ``remotes/origin/master`` and any
+local changes to ``config.json`` that may have been present in ``HEAD`` before
+the pull are re-applied.
+
+Note: In Romt version 0.1.3 and earlier, ``HEAD`` defaulted to ``master``,
+leaving a small race window where partial modifications to the repository could
+be visible to clients (e.g., ``master`` might include mention of a crate that
+hasn't yet been downloaded).  Therefore, Romt now defaults to using the branch
+``working`` for merging and other modifications to the repository.  These
+changes won't be visible on ``master`` until the ``mark`` command is invoked.
+At each ``pull`` operation, Romt will upgrade the repository to use a
+``working`` branch if ``HEAD`` is not set to ``working`` and the ``working``
+branch does not yet exist.  To avoid this, pre-create a ``working`` branch (with
+arbitrary content) before executing a ``pull`` command, and Romt will not switch
+``HEAD`` to ``working``.
 
 Downloading
 -----------

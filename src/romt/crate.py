@@ -231,11 +231,18 @@ def get_origin_url(repo: git.Repo) -> str:
 
 
 def mark(repo: git.Repo, end: str) -> None:
-    branch = "mark"
-    common.iprint(
-        "Move branch {} to point to {}".format(repr(branch), repr(end))
-    )
-    repo.create_head(branch, end, force=True)
+    for branch in ["mark", "master"]:
+        if branch == repo.head.reference.name:
+            common.eprint(
+                "Will not move branch {} (it is current HEAD)".format(
+                    repr(branch)
+                )
+            )
+        else:
+            common.iprint(
+                "Move branch {} to point to {}".format(repr(branch), repr(end))
+            )
+            repo.create_head("refs/heads/{}".format(branch), end, force=True)
 
 
 def list_crates(crates: List[Crate]) -> None:
@@ -449,7 +456,22 @@ def update_config_json(repo: git.Repo, config: bytes) -> None:
         repo.index.commit("Apply config.json adjustments")
 
 
+def _upgrade_to_working(repo: git.Repo) -> None:
+    working = git.Reference(repo, "refs/heads/working")
+    if repo.head.reference.name != "working" and not working.is_valid():
+        # Time to upgrade working tree to use "working" branch.
+        common.eprint("""Upgrade index to use "working" branch as HEAD""")
+        if repo.head.reference.is_valid():
+            # Create "working" branch based on current HEAD.
+            common.iprint(
+                """Checkout new "working" branch from current HEAD"""
+            )
+            repo.create_head("refs/heads/working", "HEAD")
+        repo.head.set_reference(working)
+
+
 def merge_origin_master(repo: git.Repo) -> None:
+    _upgrade_to_working(repo)
     initial_config = read_config_json(repo)
 
     try:
@@ -482,10 +504,14 @@ def _init_common(
     common.iprint("  remote add origin {}".format(origin_location))
     repo.create_remote("origin", origin_location)
 
-    # Setup default remote and merge branch for "master":
+    # Setup "HEAD" to new "working" branch.
+    working = git.Reference(repo, "refs/heads/working")
+    repo.head.set_reference(working)
+
+    # Setup default remote and merge branch for "working".
     with repo.config_writer() as writer:
-        writer.set_value('branch "master"', "remote", "origin")
-        writer.set_value('branch "master"', "merge", "refs/heads/master")
+        writer.set_value('branch "working"', "remote", "origin")
+        writer.set_value('branch "working"', "merge", "refs/heads/master")
 
     if not crates_root_path.is_dir():
         common.iprint(
@@ -561,7 +587,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--end",
         action="store",
-        default="master",
+        default="HEAD",
         help="reference to end of RANGE (default: %(default)s)",
     )
 
