@@ -787,7 +787,7 @@ class Main(base.BaseMain):
 
     def cmd_pull(self) -> None:
         self.forget_crates()
-        repo = get_repo(self.args.index)
+        repo = self.get_repo()
         fetch_origin(repo)
         merge_origin_master(repo)
 
@@ -837,7 +837,7 @@ class Main(base.BaseMain):
         if self.get_crates():
             bundle_path = self.get_bundle_path()
             git_bundle_create(
-                get_repo(self.args.index),
+                self.get_repo(),
                 str(bundle_path),
                 self.get_start(),
                 self.args.end,
@@ -871,7 +871,9 @@ class Main(base.BaseMain):
         init_import(index_path, Path(self.args.crates))
 
     def cmd_config(self) -> None:
-        configure_index(get_repo(self.args.index), self.args.server_url)
+        self.forget_crates()
+        configure_index(self.get_repo(), self.args.server_url)
+        mark(self.get_repo(), self.args.end)
 
     def run(self) -> None:
         if not self.args.start:
