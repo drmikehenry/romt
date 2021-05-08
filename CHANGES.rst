@@ -2,17 +2,23 @@
 History
 *******
 
+Version 0.2.2
+=============
+
+- Fix support for Python 3.5, converting several instances of ``pathlib.Path``
+  to ``str`` for use with functions like ``open()``.
+
 Version 0.2.1
 =============
 
-- `romt crate config` now implies `romt crate mark`, fixing a regression in Romt
-  0.2.0.  In older versions, only a single `master` branch was used for the
-  crates.io-index repository, so configuration changes were active immediately
-  after `romt crate config`.  As of Romt 0.2.0, such configuration changes are
-  instead made in a `working` branch that's not visible to Cargo until the
-  changes are published to `master` via a subsequent `cargo crate mark`
-  operation.  To avoid the need to manually invoke `cargo crate mark`, `cargo
-  crate config` now performs the `mark` operation automatically.
+- ``romt crate config`` now implies ``romt crate mark``, fixing a regression in
+  Romt 0.2.0.  In older versions, only a single ``master`` branch was used for
+  the crates.io-index repository, so configuration changes were active
+  immediately after ``romt crate config``.  As of Romt 0.2.0, such configuration
+  changes are instead made in a ``working`` branch that's not visible to Cargo
+  until the changes are published to ``master`` via a subsequent ``cargo crate
+  mark`` operation.  To avoid the need to manually invoke ``cargo crate mark``,
+  ``cargo crate config`` now performs the ``mark`` operation automatically.
 
 Version 0.2.0
 =============
