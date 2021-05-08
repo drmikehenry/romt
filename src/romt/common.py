@@ -187,7 +187,7 @@ def tar_context(
         if archive_path.exists():
             archive_path.unlink()
         tmp_archive_path = tmp_path_for(archive_path)
-        tar_f = tarfile.open(tmp_archive_path, mode)
+        tar_f = tarfile.open(str(tmp_archive_path), mode)
         try:
             yield tar_f
         except (Exception, KeyboardInterrupt):
@@ -198,6 +198,6 @@ def tar_context(
         tar_f.close()
         tmp_archive_path.rename(archive_path)
     else:
-        tar_f = tarfile.open(archive_path, mode)
+        tar_f = tarfile.open(str(archive_path), mode)
         yield tar_f
         tar_f.close()

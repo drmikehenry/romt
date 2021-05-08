@@ -475,12 +475,12 @@ class Main(dist.DistMain):
 
         dist_path = self.dest_path_from_rel_path("dist")
         if dist_path.is_dir():
-            shutil.rmtree(dist_path)
+            shutil.rmtree(str(dist_path))
 
         common.iprint(
             "[copytree] {} -> {}".format(archive_version_path, dist_path)
         )
-        shutil.copytree(archive_version_path, dist_path)
+        shutil.copytree(str(archive_version_path), str(dist_path))
 
     def run(self) -> None:
         valid_commands = [

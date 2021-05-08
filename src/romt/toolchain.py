@@ -544,13 +544,13 @@ class Main(dist.DistMain):
         src_path = self.manifest_path(manifest.date, manifest.channel)
         dst_path = self.manifest_path(date, channel)
         common.iprint("[publish] {}".format(dst_path))
-        shutil.copyfile(src_path, dst_path)
+        shutil.copyfile(str(src_path), str(dst_path))
         src_hash_path = integrity.path_append_hash_suffix(src_path)
         dst_hash_path = integrity.path_append_hash_suffix(dst_path)
-        shutil.copyfile(src_hash_path, dst_hash_path)
+        shutil.copyfile(str(src_hash_path), str(dst_hash_path))
         src_sig_path = signature.path_append_sig_suffix(src_path)
         dst_sig_path = signature.path_append_sig_suffix(dst_path)
-        shutil.copyfile(src_sig_path, dst_sig_path)
+        shutil.copyfile(str(src_sig_path), str(dst_sig_path))
 
     def _write_manifest_variations(self, manifest: Manifest) -> None:
         date = manifest.date

@@ -42,7 +42,7 @@ class Downloader:
     def _download(self, url: str, dest_path: Path) -> None:
         common.make_dirs_for(dest_path)
         try:
-            with open(dest_path, "wb") as f:
+            with dest_path.open("wb") as f:
                 self.download_fileobj(url, f)
         except error.DownloadError:
             if dest_path.is_file():
