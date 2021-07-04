@@ -3,11 +3,13 @@
 
 import argparse
 import json
+import multiprocessing
 import os
 from pathlib import Path
 import re
 from typing import Generator, List, Optional, Tuple
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
 import git
 import git.remote
@@ -250,6 +252,38 @@ def list_crates(crates: List[Crate]) -> None:
         common.iprint(crate.rel_path().name)
 
 
+def _process_one_crate(
+    downloader: romt.download.Downloader,
+    dl_template: Optional[str],
+    path: Path,
+    crate: Crate,
+    assume_ok: bool,
+) -> True:
+    is_good = False
+    try:
+        if dl_template is None:
+            downloader.verify_hash(path, crate.hash)
+        else:
+            url = dl_template.format(
+                crate=crate.name, version=crate.version
+            )
+            downloader.download_verify_hash(
+                url, path, crate.hash, assume_ok=assume_ok
+            )
+        is_good = True
+    except error.DownloadError as e:
+        common.eprint(
+            "Error: Download failure for {}: {}".format(
+                e.name, e.exception
+            )
+        )
+    except error.MissingFileError as e:
+        common.eprint("Error: Missing {}".format(e.name))
+    except error.IntegrityError as e:
+        common.eprint(str(e))
+    return is_good
+
+
 def _process_crates(
     downloader: romt.download.Downloader,
     dl_template: Optional[str],
@@ -259,45 +293,34 @@ def _process_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
+    threads: int,
 ) -> None:
     good_paths_file = common.open_optional(good_paths_log_path, "w")
     bad_paths_file = common.open_optional(bad_paths_log_path, "w")
 
     num_good_paths = 0
     num_bad_paths = 0
-    for crate in crates:
-        rel_path = crate.rel_path()
-        path = crates_root / rel_path
-        is_good = False
-        try:
-            if dl_template is None:
-                downloader.verify_hash(path, crate.hash)
-            else:
-                url = dl_template.format(
-                    crate=crate.name, version=crate.version
-                )
-                downloader.download_verify_hash(
-                    url, path, crate.hash, assume_ok=assume_ok
-                )
-            is_good = True
-        except error.DownloadError as e:
-            common.eprint(
-                "Error: Download failure for {}: {}".format(
-                    e.name, e.exception
-                )
-            )
-        except error.MissingFileError as e:
-            common.eprint("Error: Missing {}".format(e.name))
-        except error.IntegrityError as e:
-            common.eprint(str(e))
-
-        if is_good:
-            num_good_paths += 1
-            common.log(good_paths_file, path)
-        else:
-            num_bad_paths += 1
-            common.log(bad_paths_file, path)
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        running_threads = set()
+        for i, crate in enumerate(crates):
+            rel_path = crate.rel_path()
+            path = crates_root / rel_path
+            thread = executor.submit(_process_one_crate, downloader, dl_template, path, crate, assume_ok)
+            running_threads.add(thread)
+            is_last_crate = (i + 1 == len(crates))
+            while (len(running_threads) > threads) or (is_last_crate and running_threads):
+                done, not_done = wait(running_threads, return_when=FIRST_COMPLETED)
+                for thread in done:
+                    is_good = thread.result()
+                    if is_good:
+                        num_good_paths += 1
+                        common.log(good_paths_file, path)
+                    else:
+                        num_bad_paths += 1
+                        common.log(bad_paths_file, path)
+                running_threads = not_done
+        assert (not running_threads), "Should not reach here. Some threads not processed."
 
     common.iprint(
         "{} bad paths, {} good paths".format(num_bad_paths, num_good_paths)
@@ -319,7 +342,8 @@ def download_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
+    threads: int,
 ) -> None:
     _process_crates(
         downloader,
@@ -330,6 +354,7 @@ def download_crates(
         bad_paths_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
+        threads=threads,
     )
 
 
@@ -341,7 +366,8 @@ def verify_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
+    threads: int,
 ) -> None:
     _process_crates(
         downloader,
@@ -352,6 +378,7 @@ def verify_crates(
         bad_paths_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
+        threads=threads,
     )
 
 
@@ -668,6 +695,13 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        '--threads',
+        type=int,
+        default=(multiprocessing.cpu_count() // 2) or 1,
+        help="Number of CPU cores used to download or verify (default=half of logical cpus(%(default)s))",
+    )
+
+    parser.add_argument(
         "commands",
         nargs="*",
         metavar="COMMAND",
@@ -820,6 +854,7 @@ class Main(base.BaseMain):
             self.args.bad_paths,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
+            threads=self.args.threads,
         )
 
     def cmd_verify(self) -> None:
@@ -831,6 +866,7 @@ class Main(base.BaseMain):
             self.args.bad_paths,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
+            threads=self.args.threads,
         )
 
     def cmd_pack(self) -> None:

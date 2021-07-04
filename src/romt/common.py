@@ -129,7 +129,7 @@ def close_optional(f: Optional[IO[Any]]) -> None:
 def make_dirs_for(path: Path) -> None:
     parent = path.parent
     if not parent.is_dir():
-        parent.mkdir(parents=True)
+        parent.mkdir(parents=True, exist_ok=True)
 
 
 def log(log_file: Optional[IO[Any]], message: Any) -> None:
