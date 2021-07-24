@@ -875,7 +875,7 @@ class Main(base.BaseMain):
         configure_index(self.get_repo(), self.args.server_url)
         mark(self.get_repo(), self.args.end)
 
-    def run(self) -> None:
+    def _run(self) -> None:
         if not self.args.start:
             self.args.start = "mark"
             self.args.allow_missing_start = True

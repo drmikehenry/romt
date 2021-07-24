@@ -39,3 +39,15 @@ class BaseMain:
         if not self.args.archive:
             raise error.UsageError("missing archive name")
         return Path(self.args.archive)
+
+    def _run(self) -> None:
+        # Override in derived classes.
+        pass
+
+    def run(self) -> None:
+        try:
+            self._run()
+        finally:
+            if self._downloader is not None:
+                self._downloader.close()
+                self._downloader = None

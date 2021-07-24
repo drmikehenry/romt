@@ -21,6 +21,15 @@ Making a release
 
 - Follow on-screen instructions to complete release.
 
+Upgrading dependencies
+======================
+
+- Update ``requirements.in``.
+
+- Update ``requirements.txt`` using ``pip-compile`` from ``pip-tools``::
+
+    pip-compile requirements.in
+
 Testing with fake crate INDEX
 =============================
 

@@ -583,7 +583,7 @@ class Main(dist.DistMain):
             common.vprint("  ident: {}".format(manifest.ident))
             self._write_manifest_variations(manifest)
 
-    def run(self) -> None:
+    def _run(self) -> None:
         valid_commands = [
             "fetch-manifest",
             "download",

@@ -5,7 +5,7 @@ import io
 from pathlib import Path
 from typing import BinaryIO
 
-import requests
+import httpx
 
 from romt import common
 from romt import error
@@ -15,7 +15,7 @@ from romt import signature
 
 class Downloader:
     def __init__(self) -> None:
-        self._session = requests.Session()
+        self._client = httpx.Client()
         self.sig_verifier = signature.Verifier()
         self._warn_signature = False
 
@@ -24,11 +24,11 @@ class Downloader:
 
     def download_fileobj(self, url: str, fileobj: BinaryIO) -> None:
         try:
-            response = self._session.get(url, stream=True)
-            response.raise_for_status()
-            for chunk in response.iter_content(chunk_size=4096):
-                fileobj.write(chunk)
-        except requests.exceptions.RequestException as e:
+            with self._client.stream("GET", url) as response:
+                response.raise_for_status()
+                for chunk in response.iter_bytes(chunk_size=4096):
+                    fileobj.write(chunk)
+        except httpx.RequestError as e:
             raise error.DownloadError(url, e)
 
     def get(self, url: str) -> bytes:
@@ -170,3 +170,6 @@ class Downloader:
 
         if with_sig:
             self.sig_verify(dest_path, sig_path)
+
+    def close(self) -> None:
+        self._client.close()

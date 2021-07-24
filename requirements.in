@@ -3,5 +3,6 @@
 # See https://github.com/gitpython-developers/GitPython/issues/935.
 gitpython==3.0.5
 python-gnupg==0.4.6
-requests==2.22.0
+httpx==0.18.2
 toml==0.10.0
+dataclasses==0.8.0; python_version < '3.7'

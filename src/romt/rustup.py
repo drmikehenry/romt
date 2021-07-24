@@ -482,7 +482,7 @@ class Main(dist.DistMain):
         )
         shutil.copytree(str(archive_version_path), str(dist_path))
 
-    def run(self) -> None:
+    def _run(self) -> None:
         valid_commands = [
             "download",
             "verify",
