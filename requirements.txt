@@ -7,11 +7,19 @@
 anyio==3.3.0
     # via httpcore
 async-generator==1.10
-    # via httpx
+    # via
+    #   httpx
+    #   trio
+attrs==21.2.0
+    # via
+    #   outcome
+    #   trio
 certifi==2019.9.11
     # via httpx
 contextvars==2.4
-    # via sniffio
+    # via
+    #   sniffio
+    #   trio
 dataclasses==0.8.0 ; python_version < "3.7"
     # via
     #   -r requirements.in
@@ -30,8 +38,11 @@ idna==2.8
     # via
     #   anyio
     #   rfc3986
+    #   trio
 immutables==0.15
     # via contextvars
+outcome==1.1.0
+    # via trio
 python-gnupg==0.4.6
     # via -r requirements.in
 rfc3986[idna2008]==1.5.0
@@ -43,7 +54,12 @@ sniffio==1.2.0
     #   anyio
     #   httpcore
     #   httpx
+    #   trio
+sortedcontainers==2.4.0
+    # via trio
 toml==0.10.0
+    # via -r requirements.in
+trio==0.19.0
     # via -r requirements.in
 typing-extensions==3.10.0.0
     # via anyio

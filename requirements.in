@@ -5,4 +5,5 @@ gitpython==3.0.5
 python-gnupg==0.4.6
 httpx==0.18.2
 toml==0.10.0
+trio==0.19.0
 dataclasses==0.8.0; python_version < '3.7'

@@ -32,7 +32,8 @@ class BaseMain:
     @property
     def downloader(self) -> romt.download.Downloader:
         if self._downloader is None:
-            self._downloader = romt.download.Downloader()
+            num_jobs = max(self.args.num_jobs, 1)
+            self._downloader = romt.download.Downloader(num_jobs=num_jobs)
         return self._downloader
 
     def get_archive_path(self) -> Path:

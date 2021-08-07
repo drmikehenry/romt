@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 # coding=utf-8
 
-import io
+import functools
 from pathlib import Path
-from typing import BinaryIO
+from typing import (
+    Any,
+    Awaitable,
+    BinaryIO,
+    Callable,
+)
 
 import httpx
+import trio
 
 from romt import common
 from romt import error
@@ -14,58 +20,62 @@ from romt import signature
 
 
 class Downloader:
-    def __init__(self) -> None:
-        self._client = httpx.Client()
+    def __init__(self, num_jobs: int) -> None:
+        self._client = httpx.AsyncClient()
         self.sig_verifier = signature.Verifier()
         self._warn_signature = False
+        self.num_jobs = num_jobs
 
     def set_warn_signature(self, warn_signature: bool) -> None:
         self._warn_signature = warn_signature
 
-    def download_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+    async def adownload_fileobj(self, url: str, fileobj: BinaryIO) -> None:
         try:
-            with self._client.stream("GET", url) as response:
+            async with self._client.stream("GET", url) as response:
                 response.raise_for_status()
-                for chunk in response.iter_bytes(chunk_size=4096):
+                async for chunk in response.aiter_bytes(chunk_size=16384):
                     fileobj.write(chunk)
         except httpx.RequestError as e:
             raise error.DownloadError(url, e)
 
-    def get(self, url: str) -> bytes:
-        data = io.BytesIO()
-        self.download_fileobj(url, data)
-        return data.getvalue()
+    def download_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+        self.run_job(self.adownload_fileobj, url, fileobj)
 
-    def get_text(self, url: str) -> str:
-        return self.get(url).decode("utf-8")
-
-    def _download(self, url: str, dest_path: Path) -> None:
+    async def _adownload(self, url: str, dest_path: Path) -> None:
         common.make_dirs_for(dest_path)
         try:
             with dest_path.open("wb") as f:
-                self.download_fileobj(url, f)
+                await self.adownload_fileobj(url, f)
         except error.DownloadError:
             if dest_path.is_file():
                 dest_path.unlink()
             raise
 
-    def download(self, url: str, dest_path: Path) -> None:
+    async def adownload(self, url: str, dest_path: Path) -> None:
         if dest_path.is_file():
             dest_path.unlink()
         tmp_dest_path = common.tmp_path_for(dest_path)
-        self._download(url, tmp_dest_path)
+        await self._adownload(url, tmp_dest_path)
         tmp_dest_path.rename(dest_path)
 
-    def download_cached(
+    def download(self, url: str, dest_path: Path) -> None:
+        self.run_job(self.adownload, url, dest_path)
+
+    async def adownload_cached(
         self, dest_url: str, dest_path: Path, *, cached: bool = True
     ) -> None:
         if cached and dest_path.is_file():
             common.vprint("[cached file] {}".format(dest_path))
         else:
             common.vprint("[downloading] {}".format(dest_path))
-            self.download(dest_url, dest_path)
+            await self.adownload(dest_url, dest_path)
 
-    def sig_verify(self, path: Path, sig_path: Path) -> None:
+    def download_cached(
+        self, dest_url: str, dest_path: Path, *, cached: bool = True
+    ) -> None:
+        self.run_job(self.adownload_cached, dest_url, dest_path, cached=cached)
+
+    def _sig_verify(self, path: Path, sig_path: Path) -> None:
         try:
             self.sig_verifier.verify(path, sig_path)
         except (error.MissingFileError, error.IntegrityError):
@@ -94,9 +104,9 @@ class Downloader:
         integrity.verify(path, hash_path)
         if with_sig:
             sig_path = signature.path_append_sig_suffix(path)
-            self.sig_verify(path, sig_path)
+            self._sig_verify(path, sig_path)
 
-    def download_verify_hash(
+    async def adownload_verify_hash(
         self,
         dest_url: str,
         dest_path: Path,
@@ -116,10 +126,28 @@ class Downloader:
             except (error.MissingFileError, error.IntegrityError):
                 pass
         common.vprint("[downloading] {}".format(dest_path))
-        self.download(dest_url, dest_path)
+        await self.adownload(dest_url, dest_path)
         integrity.verify_hash(dest_path, hash)
 
-    def download_verify(
+    def download_verify_hash(
+        self,
+        dest_url: str,
+        dest_path: Path,
+        hash: str,
+        *,
+        cached: bool = True,
+        assume_ok: bool = False
+    ) -> None:
+        self.run_job(
+            self.adownload_verify_hash,
+            dest_url,
+            dest_path,
+            hash,
+            cached=cached,
+            assume_ok=assume_ok,
+        )
+
+    async def adownload_verify(
         self,
         dest_url: str,
         dest_path: Path,
@@ -142,7 +170,7 @@ class Downloader:
             try:
                 integrity.verify(dest_path, hash_path)
                 if with_sig:
-                    self.sig_verify(dest_path, sig_path)
+                    self._sig_verify(dest_path, sig_path)
                 common.vprint("[cached file] {}".format(dest_path))
                 return
             except (error.MissingFileError, error.IntegrityError):
@@ -150,10 +178,10 @@ class Downloader:
         common.vprint("[downloading] {}".format(dest_path))
         # Download the (small) hash and signature files first.
         hash_url = integrity.append_hash_suffix(dest_url)
-        self.download(hash_url, hash_path)
+        await self.adownload(hash_url, hash_path)
         if with_sig:
             sig_url = signature.append_sig_suffix(dest_url)
-            self.download(sig_url, sig_path)
+            await self.adownload(sig_url, sig_path)
 
         # If dest_path exists and has the correct hash, bypass the downloading
         # step to save download time.
@@ -165,11 +193,37 @@ class Downloader:
             except (error.MissingFileError, error.IntegrityError):
                 pass
         if download_required:
-            self.download(dest_url, dest_path)
+            await self.adownload(dest_url, dest_path)
             integrity.verify(dest_path, hash_path)
 
         if with_sig:
-            self.sig_verify(dest_path, sig_path)
+            self._sig_verify(dest_path, sig_path)
+
+    def download_verify(
+        self,
+        dest_url: str,
+        dest_path: Path,
+        *,
+        cached: bool = True,
+        assume_ok: bool = False,
+        with_sig: bool = False
+    ) -> None:
+        self.run_job(
+            self.adownload_verify,
+            dest_url,
+            dest_path,
+            cached=cached,
+            assume_ok=assume_ok,
+            with_sig=with_sig,
+        )
+
+    def run_job(
+        self, job: Callable[..., Awaitable[None]], *args: Any, **kwargs: Any
+    ) -> None:
+        trio.run(functools.partial(job, **kwargs), *args)
+
+    def new_limiter(self) -> trio.CapacityLimiter:
+        return trio.CapacityLimiter(self.num_jobs)
 
     def close(self) -> None:
-        self._client.close()
+        self.run_job(self._client.aclose)

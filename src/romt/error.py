@@ -41,7 +41,8 @@ class IntegrityError(Error):
             )
         elif sig_name:
             message = "Signature failure for {} using signature {}".format(
-                name, sig_name)
+                name, sig_name
+            )
         else:
             message = "Integrity failure"
         super().__init__(message)

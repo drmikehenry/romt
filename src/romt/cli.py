@@ -50,6 +50,7 @@ def readme_from_pkg_resources() -> str:
 def readme_from_file() -> str:
     # This method works with PyInstaller.
     import pkgutil
+
     text = ""
     try:
         readme = pkgutil.get_data(project_name, "README.rst")
@@ -84,6 +85,15 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
     parser.add_argument(
         "--readme", action="store_true", help="display README.rst",
+    )
+
+    parser.add_argument(
+        "--num-jobs",
+        "-j",
+        type=int,
+        default=4,
+        action="store",
+        help="number of simultaneous download jobs (default %(default)s)",
     )
 
 

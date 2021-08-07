@@ -6,10 +6,13 @@ from pathlib import Path
 import re
 import shutil
 from typing import (
+    Iterable,
     List,
     Set,
     Tuple,
 )
+
+import trio
 
 from romt import base
 from romt import common
@@ -337,6 +340,44 @@ class Main(dist.DistMain):
             manifest = self.select_manifest(spec, download=True)
             common.iprint("  ident: {}".format(manifest.ident))
 
+    async def _download_verify_one(
+        self,
+        limiter: trio.CapacityLimiter,
+        download: bool,
+        dest_url: str,
+        dest_path: Path,
+    ) -> None:
+        try:
+            if download:
+                await self.downloader.adownload_verify(
+                    dest_url,
+                    dest_path,
+                    assume_ok=self.args.assume_ok,
+                    with_sig=self._with_sig,
+                )
+            else:
+                self.downloader.verify(dest_path, with_sig=self._with_sig)
+        finally:
+            limiter.release_on_behalf_of(dest_path)
+
+    async def _download_verify_packages(
+        self, download: bool, packages: Iterable[Package]
+    ) -> None:
+        async with trio.open_nursery() as nursery:
+            limiter = self.downloader.new_limiter()
+            for package in packages:
+                rel_path = package.rel_path
+                dest_path = self.dest_path_from_rel_path(rel_path)
+                dest_url = self.url_from_rel_path(rel_path)
+                await limiter.acquire_on_behalf_of(dest_path)
+                nursery.start_soon(
+                    self._download_verify_one,
+                    limiter,
+                    download,
+                    dest_url,
+                    dest_path,
+                )
+
     def _download_verify(
         self, download: bool, specs: List[str], base_targets: List[str]
     ) -> None:
@@ -359,19 +400,9 @@ class Main(dist.DistMain):
             for t in targets:
                 common.vvprint("  target: {}".format(t))
 
-            for package in packages:
-                rel_path = package.rel_path
-                dest_path = self.dest_path_from_rel_path(rel_path)
-                dest_url = self.url_from_rel_path(rel_path)
-                if download:
-                    self.downloader.download_verify(
-                        dest_url,
-                        dest_path,
-                        assume_ok=self.args.assume_ok,
-                        with_sig=self._with_sig,
-                    )
-                else:
-                    self.downloader.verify(dest_path, with_sig=self._with_sig)
+            self.downloader.run_job(
+                self._download_verify_packages, download, packages
+            )
 
     def cmd_download(self) -> None:
         specs = self.adjust_download_specs(self.specs)

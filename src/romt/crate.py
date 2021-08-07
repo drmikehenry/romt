@@ -11,6 +11,7 @@ import urllib.parse
 
 import git
 import git.remote
+import trio
 
 from romt import base
 from romt import common
@@ -266,7 +267,11 @@ def _process_crates(
 
     num_good_paths = 0
     num_bad_paths = 0
-    for crate in crates:
+
+    limiter = downloader.new_limiter()
+
+    async def _process_one(crate: Crate) -> None:
+        nonlocal num_good_paths, num_bad_paths
         rel_path = crate.rel_path()
         path = crates_root / rel_path
         is_good = False
@@ -277,7 +282,7 @@ def _process_crates(
                 url = dl_template.format(
                     crate=crate.name, version=crate.version
                 )
-                downloader.download_verify_hash(
+                await downloader.adownload_verify_hash(
                     url, path, crate.hash, assume_ok=assume_ok
                 )
             is_good = True
@@ -298,6 +303,18 @@ def _process_crates(
         else:
             num_bad_paths += 1
             common.log(bad_paths_file, path)
+
+        limiter.release_on_behalf_of(crate)
+
+    async def _process_inner() -> None:
+        async with trio.open_nursery() as nursery:
+            for crate in crates:
+                await limiter.acquire_on_behalf_of(crate)
+                nursery.start_soon(
+                    _process_one, crate,
+                )
+
+    downloader.run_job(_process_inner)
 
     common.iprint(
         "{} bad paths, {} good paths".format(num_bad_paths, num_good_paths)
