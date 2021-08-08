@@ -11,7 +11,8 @@ an offline context.  Instructions and tooling are provided for:
   - Rustup (toolchain multiplexer)
   - Crates.io (community-supplied Crates)
 
-- Incremental artifact downloading.
+- Incremental artifact downloading (with a configurable number of simultaneous
+  download jobs).
 
 - Incremental artifact transfer to offline network.
 
@@ -32,6 +33,12 @@ Romt support two main mirroring scenarios:
 
 Instructions are provided for serving the artifacts using Romt itself via
 unencrypted HTTP or via the nginx web server.
+
+Alternative Tooling
+===================
+
+- Panamax is an alternative to Romt, written in Rust:
+  https://github.com/panamax-rs/panamax
 
 Requirements
 ============
@@ -471,6 +478,10 @@ SHA256 hashes
 
 Command-line option details
 ---------------------------
+
+- The option ``--num-jobs`` controls how many simultaneous download jobs Romt
+  may use at a time.  By default, ``--num-jobs=4``, which should be a
+  conservative value that won't stress the servers heavily.
 
 - The option ``--assume-ok`` instructs Romt that all files already on-disk are
   to be assumed OK; no hashes or signatures are checked for such files.

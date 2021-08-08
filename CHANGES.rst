@@ -2,6 +2,14 @@
 History
 *******
 
+Version 0.3.0
+=============
+
+- Add support for multiple simultaneous download jobs via ``--num-jobs``,
+  enabled by switching from the ``requests`` package to ``httpx``.
+
+- Drop support for Python 3.5, as ``httpx`` requires at least Python 3.6.
+
 Version 0.2.2
 =============
 
