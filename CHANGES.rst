@@ -2,6 +2,25 @@
 History
 *******
 
+Version 0.3.1
+=============
+
+- Fix ``romt crate --keep-going`` to correctly handle ``403 Forbidden`` and
+  other HTTP status failures (thanks to Anthony Gray,
+  https://github.com/f34rt3hbunn3h).
+
+  When porting from `requests` to `httpx`, the exception handling in the
+  `Downloader` class was incorrectly switched from the ``requests`` library's
+  ``RequestException`` base class to the ``httpx`` library's ``RequestError``
+  class; the former is the base class for all of the exceptions in ``requests``,
+  whereas the latter doesn't cover all exceptions in ``httpx``.  This fix
+  switches the exception handler to properly use ``httpx.HTTPError`` to catch
+  all `httpx` library exceptions.
+
+  References:
+  - https://docs.python-requests.org/en/master/_modules/requests/exceptions/
+  - https://www.python-httpx.org/exceptions/
+
 Version 0.3.0
 =============
 
