@@ -35,7 +35,7 @@ class Downloader:
                 response.raise_for_status()
                 async for chunk in response.aiter_bytes(chunk_size=16384):
                     fileobj.write(chunk)
-        except httpx.RequestError as e:
+        except httpx.HTTPError as e:
             raise error.DownloadError(url, e)
 
     def download_fileobj(self, url: str, fileobj: BinaryIO) -> None:
