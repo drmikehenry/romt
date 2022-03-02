@@ -762,7 +762,7 @@ class Main(base.BaseMain):
         """Path for repo's remote "origin" URL"""
         url = get_origin_url(self.get_repo())
         parsed = urllib.parse.urlparse(url)
-        if parsed.scheme or parsed.netloc:
+        if len(parsed.scheme) > 1 or parsed.netloc:
             raise error.UsageError(
                 "INDEX remote ``origin`` must have ``url`` as a local file"
             )

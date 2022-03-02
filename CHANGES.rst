@@ -2,6 +2,21 @@
 History
 *******
 
+Version 0.3.2
+=============
+
+- Fix issue #12 causing the below error with ``romt crate import`` on Windows::
+
+    INDEX remote ``origin`` must have ``url`` as a local file
+
+  Romt requires the URL to be a local path (e.g., ``/path/to/origin.bundle``)
+  instead of a URL with a schema (e.g., ``https://server/path``).  The check for
+  URL schemas was overzealous.  URLs with a leading ``schema:`` prefix should be
+  rejected, but Windows paths with drive letters such as
+  ``c:/path/to/origin.bundle`` are local; the ``c:`` drive letter should not be
+  considered to be a ``schema:`` prefix.  Single-character schema-like prefixes
+  are no longer treated as errors.
+
 Version 0.3.1
 =============
 
