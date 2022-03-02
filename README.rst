@@ -1593,7 +1593,8 @@ on the platform):
 
 - On non-Windows:
 
-  - ``/usr/lib/git-core/git-http-backend``
+  - ``/usr/lib/git-core/git-http-backend`` (typical Linux)
+  - ``/usr/libexec/git-core/git-http-backend`` (Alpine Linux)
 
 To manually setup the Git backend, create a script file in ``cgi-bin/`` with
 contents similar to these examples (depending on platform):

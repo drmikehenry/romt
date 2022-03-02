@@ -19,6 +19,11 @@ Version 0.3.2
 
 - Clarify quick-start instructions, pointing out steps which are one-time only.
 
+- Add probe for Alpine Linux's default location for ``git-http-backend``
+  (``/usr/libexec/git-core/git-http-backend``) in addition to the more common
+  location (``/usr/lib/git-core/git-http-backend``).  This eliminates the need
+  for manual configuration with Alpine (see issue #11).
+
 Version 0.3.1
 =============
 

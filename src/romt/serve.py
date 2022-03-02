@@ -126,6 +126,9 @@ if common.is_windows:
 else:
     GIT_HTTP_BACKEND_SOURCES = [
         "/usr/lib/git-core/git-http-backend",
+
+        # Alpine Linux:
+        "/usr/libexec/git-core/git-http-backend",
     ]
 
 
