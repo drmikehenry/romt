@@ -238,11 +238,17 @@ configuration with mirrored Rust content.
     # Change ``linux`` to ``windows`` or ``darwin`` as appropriate:
     romt rustup -v -s stable -t linux download
 
+- Setup crate mirror (one-time only):
+
+  .. code-block:: sh
+
+    romt crate init
+
 - Download full crates.io mirror:
 
   .. code-block:: sh
 
-    romt crate -v --keep-going init update
+    romt crate -v --keep-going update
 
   .. note::
 
@@ -251,7 +257,7 @@ configuration with mirrored Rust content.
     should be expected.  The ``--keep-going`` option allows romt to continue
     in the face of these missing crates.
 
-- Configure crate mirror to be served from localhost:
+- Configure crate mirror to be served from localhost (one-time only):
 
   .. code-block:: sh
 
@@ -299,11 +305,17 @@ are omitted below.
       # Change ``linux`` to ``windows`` or ``darwin`` as appropriate:
       romt rustup -v -s stable -t linux download pack
 
-  - Setup crate mirror, download and create ``crates.tar.gz``:
+  - Setup crate mirror (one-time only):
 
     .. code-block:: sh
 
-      romt crate -v --keep-going init export
+      romt crate init
+
+  - Download and create ``crates.tar.gz``:
+
+    .. code-block:: sh
+
+      romt crate -v --keep-going export
 
   - Transfer ``toolchain.tar.gz, ``rustup.tar.gz``, and ``crates.tar.gz`` to
     Import machine.
@@ -312,28 +324,39 @@ are omitted below.
 
   - Install Romt (as above).
 
-  - Create area for mirrored artifacts:
+  - Create area for mirrored artifacts (one-time only):
 
     .. code-block:: sh
 
       mkdir mirror
-      cd mirror
 
   - Place exported ``toolchain.tar.gz, ``rustup.tar.gz``, and ``crates.tar.gz``
-    files into this ``mirror/`` directory.
+    files into this ``mirror/`` directory, and enter the directory at a prompt:
+
+    .. code-block:: sh
+
+      cd mirror
 
   - Import toolchain and rustup:
+
+    .. code-block:: sh
 
       romt toolchain -v unpack
       romt rustup -v unpack
 
-  - Setup crate mirror and import ``crates.tar.gz``:
+  - Setup crate mirror (one-time only):
 
     .. code-block:: sh
 
-      romt crate -v --keep-going init-import import
+      romt crate init-import
 
-  - Configure crate mirror to be served from localhost:
+  - Import ``crates.tar.gz``:
+
+    .. code-block:: sh
+
+      romt crate -v --keep-going import
+
+  - Configure crate mirror to be served from localhost (one-time only):
 
     .. code-block:: sh
 

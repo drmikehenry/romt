@@ -17,6 +17,8 @@ Version 0.3.2
   considered to be a ``schema:`` prefix.  Single-character schema-like prefixes
   are no longer treated as errors.
 
+- Clarify quick-start instructions, pointing out steps which are one-time only.
+
 Version 0.3.1
 =============
 
