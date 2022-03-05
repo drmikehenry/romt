@@ -44,7 +44,7 @@ class IntegrityError(Error):
                 name, sig_name
             )
         else:
-            message = "Integrity failure"
+            message = "Integrity failure for {}".format(name)
         super().__init__(message)
         self.name = name
         self.actual_hash = actual_hash
@@ -66,7 +66,11 @@ class MissingDirectoryError(Error):
 
 class DownloadError(Error):
     def __init__(self, name: str, exception: Exception) -> None:
-        super().__init__("failed to download {}".format(name))
+        super().__init__(
+            "failed to download {}; exception details {!r}".format(
+                name, exception
+            )
+        )
         self.name = name
         self.exception = exception
 

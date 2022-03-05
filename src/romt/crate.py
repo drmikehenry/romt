@@ -287,15 +287,11 @@ def _process_crates(
                 )
             is_good = True
         except error.DownloadError as e:
-            common.eprint(
-                "Error: Download failure for {}: {}".format(
-                    e.name, e.exception
-                )
-            )
+            common.eprint(e)
         except error.MissingFileError as e:
-            common.eprint("Error: Missing {}".format(e.name))
+            common.eprint(e)
         except error.IntegrityError as e:
-            common.eprint(str(e))
+            common.eprint(e)
 
         if is_good:
             num_good_paths += 1

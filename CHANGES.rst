@@ -24,6 +24,11 @@ Version 0.3.2
   location (``/usr/lib/git-core/git-http-backend``).  This eliminates the need
   for manual configuration with Alpine (see issue #11).
 
+- Improve exception messages.  For `DownloadError` in particular, embed the
+  `repr()` of the associated exception from `httpx` to aid in debugging
+  `httpx`-related errors (see also issue #10 for more debugging of `httpx`
+  proxy-related issues).
+
 Version 0.3.1
 =============
 
