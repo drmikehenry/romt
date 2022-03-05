@@ -1747,6 +1747,29 @@ Examples:
 
     curl -O https://static.crates.io/crates/serde/serde-1.0.99.crate
 
+Troubleshooting
+===============
+
+Proxy server troubleshooting
+----------------------------
+
+The author has not tested Romt with a proxy server, but user feedback indicates
+it's possible (see https://github.com/drmikehenry/romt/issues/10).  The
+``httpx`` library's support for proxying is documented at:
+https://www.python-httpx.org/advanced/#http-proxying
+
+``httpx`` understands several environment variables (documented at the page
+above) that may be used to influence proxy operation.  In addition, ``httpx``
+has information about debugging proxy-related issues at:
+https://www.python-httpx.org/contributing/#development-proxy-setup
+
+Also, ``httpx`` can produce more debugging information by setting the
+environment variable ``HTTPX_LOG_LEVEL`` to ``trace`` (as documented at
+https://www.python-httpx.org/environment_variables/).  As a sample invocation on
+Linux::
+
+  HTTPX_LOG_LEVEL=trace romt toolchain -v -s nightly -t all fetch-manifest
+
 Reference
 =========
 
