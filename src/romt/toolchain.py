@@ -391,7 +391,7 @@ class Main(dist.DistMain):
             common.iprint("  ident: {}".format(manifest.ident))
 
             targets = self.adjust_targets(manifest, base_targets)
-            packages = list(manifest.gen_available_packages(targets=targets))
+            packages = list(set(manifest.gen_available_packages(targets=targets)))
             common.iprint(
                 "  packages: {}, targets: {}".format(
                     len(packages), len(targets)
@@ -487,7 +487,7 @@ class Main(dist.DistMain):
 
                 targets = self.adjust_targets(manifest, base_targets)
                 packages = list(
-                    manifest.gen_available_packages(targets=targets)
+                    set(manifest.gen_available_packages(targets=targets))
                 )
                 common.iprint(
                     "  packages: {}, targets: {}".format(
