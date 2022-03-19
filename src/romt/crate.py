@@ -114,6 +114,10 @@ class Crate:
     def __str__(self) -> str:
         return "Crate({}, {}, {})".format(self.name, self.version, self.hash)
 
+    @property
+    def ident(self) -> Tuple[str, str]:
+        return self.name, self.version
+
     def rel_path(self) -> Path:
         return crate_rel_path_from_name_version(self.name, self.version)
 
@@ -736,10 +740,12 @@ class Main(base.BaseMain):
     def get_crates(self) -> List[Crate]:
         if self._crates is None:
             common.vprint("[calculating crate list]")
-            self._crates = list(
-                crates_in_range(
-                    self.get_repo(), self.get_start(), self.args.end
-                )
+            crate_iter = crates_in_range(
+                self.get_repo(), self.get_start(), self.args.end
+            )
+            crates_by_ident = {crate.ident: crate for crate in crate_iter}
+            self._crates = sorted(
+                crates_by_ident.values(), key=lambda crate: crate.ident
             )
             common.vprint("[{} crates in range]".format(len(self._crates)))
         return self._crates

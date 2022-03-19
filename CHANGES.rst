@@ -2,6 +2,17 @@
 History
 *******
 
+Version 0.3.3
+=============
+
+- Fix issue #13 regarding duplicate toolchain artifact URLs.  Some distinct
+  toolchain artifacts may share the same download URL (e.g.,
+  ``.../rust-docs-nightly-x86_64-unknown-linux-gnu.tar.xz`` is shared across
+  several other processor variants).  Before version 0.3.0, this was handled
+  naturally by the sequential nature of the download operation, but the new
+  asynchronous support from 0.3.0 failed to account for the possible
+  duplication.
+
 Version 0.3.2
 =============
 

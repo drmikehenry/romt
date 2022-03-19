@@ -360,14 +360,30 @@ class Main(dist.DistMain):
         finally:
             limiter.release_on_behalf_of(dest_path)
 
+    def _path_duplicated(
+        self,
+        path: Path,
+        processed_paths: Set[Path],
+    ) -> bool:
+        if path in processed_paths:
+            return True
+        processed_paths.add(path)
+        return False
+
     async def _download_verify_packages(
-        self, download: bool, packages: Iterable[Package]
+        self,
+        download: bool,
+        packages: Iterable[Package],
+        processed_paths: Set[Path],
     ) -> None:
         async with trio.open_nursery() as nursery:
             limiter = self.downloader.new_limiter()
             for package in packages:
                 rel_path = package.rel_path
                 dest_path = self.dest_path_from_rel_path(rel_path)
+                if self._path_duplicated(dest_path, processed_paths):
+                    common.vprint("[duplicate] {}".format(dest_path))
+                    continue
                 dest_url = self.url_from_rel_path(rel_path)
                 await limiter.acquire_on_behalf_of(dest_path)
                 nursery.start_soon(
@@ -381,6 +397,7 @@ class Main(dist.DistMain):
     def _download_verify(
         self, download: bool, specs: List[str], base_targets: List[str]
     ) -> None:
+        processed_paths = set()  # type: Set[Path]
         for spec in specs:
             common.iprint(
                 "{}: {}".format("Download" if download else "Verify", spec)
@@ -401,7 +418,10 @@ class Main(dist.DistMain):
                 common.vvprint("  target: {}".format(t))
 
             self.downloader.run_job(
-                self._download_verify_packages, download, packages
+                self._download_verify_packages,
+                download,
+                packages,
+                processed_paths,
             )
 
     def cmd_download(self) -> None:
@@ -462,9 +482,13 @@ class Main(dist.DistMain):
         archive_path = self.get_archive_path()
         common.iprint("Packing archive: {}".format(archive_path))
         with common.tar_context(archive_path, "w") as tar_f:
+            processed_paths = set()  # type: Set[Path]
 
             def pack_path(rel_path: str) -> None:
                 dest_path = self.dest_path_from_rel_path(rel_path)
+                if self._path_duplicated(dest_path, processed_paths):
+                    common.vprint("[duplicate] {}".format(rel_path))
+                    return
                 packed_name = "dist/" + rel_path
                 common.vprint("[pack] {}".format(rel_path))
                 try:
