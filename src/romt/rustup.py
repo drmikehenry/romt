@@ -55,11 +55,13 @@ For complete details, try ``romt --readme`` to view README.rst.
 """
 
 # Note: Known targets are found by inspecting the S3 tree, e.g.::
-#  aws s3 ls --no-sign-request s3://static-rust-lang-org/rustup/archive/1.21.1/
+#  aws s3 ls --no-sign-request s3://static-rust-lang-org/rustup/archive/1.24.3/
 
 ALL_KNOWN_TARGETS = """
+    aarch64-apple-darwin
     aarch64-linux-android
     aarch64-unknown-linux-gnu
+    aarch64-unknown-linux-musl
     arm-linux-androideabi
     arm-unknown-linux-gnueabi
     arm-unknown-linux-gnueabihf
@@ -77,12 +79,14 @@ ALL_KNOWN_TARGETS = """
     powerpc-unknown-linux-gnu
     powerpc64-unknown-linux-gnu
     powerpc64le-unknown-linux-gnu
+    riscv64gc-unknown-linux-gnu
     s390x-unknown-linux-gnu
     x86_64-apple-darwin
     x86_64-linux-android
     x86_64-pc-windows-gnu
     x86_64-pc-windows-msvc
     x86_64-unknown-freebsd
+    x86_64-unknown-illumos
     x86_64-unknown-linux-gnu
     x86_64-unknown-linux-musl
     x86_64-unknown-netbsd

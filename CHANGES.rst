@@ -16,6 +16,8 @@ Version 0.3.4
   toolchain archive whenever targets not present in the archive share artifact
   files with targets present in the archive.
 
+- Update list of known targets for ``rustup``.
+
 Version 0.3.3
 =============
 
