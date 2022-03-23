@@ -2,6 +2,20 @@
 History
 *******
 
+Version 0.3.4
+=============
+
+- Fix detection of toolchain targets in the presence of artifacts shared across
+  targets.  Previously, a given target was detected whenever any one of that
+  target's artifact files was found to be present.  This algorithm is
+  insufficient when an artifact file may be shared across different targets.
+  Instead, a target is now detected with either *all* artifacts for that target
+  are present, or when at least one of the target's artifacts is present and is
+  unique to that target (not shared with other targets).  The incorrect target
+  detection could lead to ``MissingFileError`` exceptions when unpacking a
+  toolchain archive whenever targets not present in the archive share artifact
+  files with targets present in the archive.
+
 Version 0.3.3
 =============
 

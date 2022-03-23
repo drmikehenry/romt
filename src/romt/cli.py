@@ -11,7 +11,7 @@ import romt.rustup
 import romt.serve
 import romt.toolchain
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 project_name = "romt"
 

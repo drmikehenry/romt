@@ -312,8 +312,11 @@ class Main(dist.DistMain):
         return packages
 
     def downloaded_targets(self, manifest: Manifest) -> List[str]:
-        targets = set(p.target for p in self.downloaded_packages(manifest))
-        targets.discard("*")
+        def is_present(rel_path: str) -> bool:
+            dest_path = self.dest_path_from_rel_path(rel_path)
+            return dest_path.is_file()
+
+        targets = manifest.present_targets(is_present)
         return sorted(targets)
 
     def adjust_targets(
@@ -555,9 +558,9 @@ class Main(dist.DistMain):
         targets = set()
         for spec in specs:
             manifest = self.select_manifest(spec, download=False)
-            for package in manifest.gen_available_packages():
-                if package.target != "*" and package.rel_path in rel_paths:
-                    targets.add(package.target)
+            targets.update(
+                manifest.present_targets(lambda path: path in rel_paths)
+            )
         return sorted(targets)
 
     def cmd_unpack(self) -> None:

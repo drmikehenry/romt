@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # coding=utf-8
 
+import collections
 import copy
 from pathlib import Path
 from typing import (
     Any,
+    Callable,
     Generator,
     Iterable,
     List,
@@ -146,3 +148,27 @@ class Manifest:
 
     def available_targets(self) -> List[str]:
         return self._targets_from_packages(self.gen_available_packages())
+
+    def present_targets(
+        self, rel_path_is_present: Callable[[str], bool]
+    ) -> List[str]:
+        targets = set()
+        target_paths = collections.defaultdict(set)
+        path_targets = collections.defaultdict(set)
+        for package in self.gen_available_packages():
+            if package.target != "*":
+                target_paths[package.target].add(package.rel_path)
+                path_targets[package.rel_path].add(package.target)
+
+        for target, paths in target_paths.items():
+            missing_some_path = False
+            have_unique_path = False
+            for path in paths:
+                if not rel_path_is_present(path):
+                    missing_some_path = True
+                elif len(path_targets[path]) == 1:
+                    have_unique_path = True
+            if have_unique_path or not missing_some_path:
+                targets.add(target)
+
+        return sorted(targets)
