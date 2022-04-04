@@ -77,7 +77,7 @@ def crate_prefix_from_name(name: str) -> str:
         prefix = "3/{}".format(name[0])
     else:
         prefix = "{}/{}".format(name[:2], name[2:4])
-    return prefix
+    return prefix.lower()
 
 
 def crate_rel_path_from_name_version(name: str, version: str) -> Path:
