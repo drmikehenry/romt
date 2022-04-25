@@ -43,7 +43,7 @@ Alternative Tooling
 Requirements
 ============
 
-- Python 3.5+ for running ``romt`` (requires some packages from pypi.org).
+- Python 3.6+ for running ``romt`` (requires some packages from pypi.org).
 - Git is required for manipulating the crates.io-index repository.
 - Internet-connected computer for initial downloading (Linux, Windows, Mac
   [#]_).
@@ -57,6 +57,11 @@ Requirements
 
 Romt installation
 =================
+
+.. note::
+
+  Take note of the instructions for upgrading from Romt versions before 0.4.0
+  if you have existing crate mirrors created from older Romt versions.
 
 Install prerequisites
 ---------------------
@@ -460,6 +465,69 @@ localhost using either Quick-start server configuration above.
 - Fetch ``rand`` and its dependencies::
 
     cargo fetch
+
+Upgrading from Romt versions before 0.4.0
+=========================================
+
+When upgrading Romt, it's recommended to use the same version of Romt on both
+the Internet-connected and offline hosts.
+
+Romt 0.4.0 changes how crate files are stored on-disk by default, in order to
+fix problems using a mirror with case-sensitive and case-insensitive filesystems
+simultaneously.  Older Romt stores crates in directories based on the prefix of
+each crate's mixed-case name (e.g., ``MyCrate-0.1.0.crate`` would have a prefix
+of ``My/Cr/``).  This works for filesystems that are either case-sensitive or
+case-insensitive, but it does not allow a tree of crate files created with one
+case sensitivity to be accessed using the opposite case sensitivity.  Romt 0.4.0
+now defaults to making prefix directories in lowercase, allowing a crate mirror
+to be used via arbitrary case sensitivity.
+
+For backward compatibility, Romt 0.4.0 supports the use of existing mirror trees
+transparently.  Newly created mirror trees will use lowercase prefixes by
+default (usable on all filesystems); mixed-case prefixes may be requested via
+the ``--prefix=mixed`` flag (permitted only with case-sensitive filesystems).
+
+Romt 0.4.0 generates crate archives (``crates.tar.gz``) using mixed-case
+prefixes by default for backward compatibility, but it can also use lowercase
+prefixes for consistency with the preferred on-disk prefix format.  To
+distinguish the prefix style, Romt 0.4.0 adds an ``ARCHIVE_FORMAT`` file to the
+crate archive.  Format ``1`` is compatible with old Romt except for the addition
+of the ``ARCHIVE_FORMAT`` file.  Old Romt will see this file as an error and
+refuse to unpack the archive by default, but processing will succeed using the
+invocation ``romt crate unpack --keep-going``.  To avoid corrupting
+an existing crate mirror by unpacking a new crate archive with old Romt,
+new archives currently default to format ``1``, but it's recommended to upgrade
+Romt to ensure proper processing of all crate archive formats.
+
+Converting crate mirror to lowercase prefixes
+---------------------------------------------
+
+To convert an existing crate mirror (using mixed-case prefixes) to the new
+format (using lowercase prefixes), the easiest method is to make a crate archive
+of the old mirror, then unpack the archive using the new format.  For example:
+
+.. code-block:: sh
+
+  # Pack up existing crate mirror into ``crates.tar.gz``:
+  romt crate -v --keep-going --start 0 --end master pack
+
+  # Rename the old crate tree out of the way:
+  mv crates crates.old
+
+  # Initialize for importing with a temporary index area:
+  romt crate --index index-tmp init-import
+
+  # Unpack crates from crates.tar.gz into new crates/ tree:
+  romt crate -v --index index-tmp unpack
+
+  # Verify conversion:
+  romt crate verify -v --start 0
+
+  # Cleanup:
+  rm -rf index-tmp crates.old
+
+Note that the above steps eliminate the unpredictable-case prefixes that are
+created with old Romt using a case-insensitive filesystem (such as on Windows).
 
 Commonalities
 =============
@@ -1250,12 +1318,13 @@ CRATES_ROOT, which defaults to ``crates/`` and may be changed via the option
 ``--crates CRATES_ROOT``.
 
 As with the INDEX, crate files are distributed into subdirectories based on the
-first few characters of the crate's name.  The scheme is similar to that used by
-INDEX, but crate names are not converted to lowercase when calculating the
-directory names; this allows nginx URL rewriting rules to compute the directory
-names.  Since crates aren't stored in a Git repository, there is no harm caused
-when directory names with case-collisions are aliased together on a
-case-insensitive filesystem.
+first few characters of the crate's name.  By default, the prefixes are
+lowercase (unless forced to mixed-case via ``romt crate --prefix=mixed``).  Romt
+versions before 0.4.0 used mixed-case prefixes exclusively, as the author did
+not know how to compute lowercase prefixes in nginx rules (this is now solved
+using Perl with nginx).  Mixed-case prefixes caused problems when accessing a
+crates mirror via both case-sensitive and case-insensitive shares
+simultaneously, so lowercase prefixes are now preferred.
 
 =========  =================  ==========
 {prefix}   crate name length  crate name
@@ -1292,6 +1361,17 @@ machine.  Subsequent ``unpack`` commands will query the ``url`` key for the
 BUNDLE_PATH is ``origin.bundle`` within the INDEX directory; this may be changed
 via ``--bundle-path BUNDLE_PATH``.
 
+By default, crate files are stored on-disk using lowercase prefixes.  Using
+``romt crate --prefix=mixed`` forces the use of mixed-case prefixes (as used in
+Romt before version 0.4.0).  Lowercase prefixes are recommended.  Romt will not
+permit the use of ``--prefix=mixed`` when using case-insensitive filesystems
+(such as on Windows) to avoid creating unpredictable-case prefixes due to case
+aliasing issues.
+
+Romt (as of version 0.4.0) creates a ``config.toml`` file in CRATES_ROOT as an
+implementation detail to aid in the transition to lowercase crate prefixes;
+users should generally not have to interact with it.  Future versions of Romt
+may remove this configuration file and use lowercase prefixes exclusively.
 
 config
 ------
@@ -1625,10 +1705,12 @@ below, configure the index repository via:
 
   romt crate config --server-url <SERVER_URL>
 
-Below is a sample nginx configuration.  Place this content into
-``/etc/nginx/sites-available/rust``.  Within the file, change
-``/ABSOLUTE/PATH/TO/mirror`` to point to the location of your ``mirror``
-directory::
+Below is a sample nginx configuration.
+
+Place the following content into ``/etc/nginx/sites-available/rust``.  Make
+adjustments as indicated by each ``TODO``.  These instructions assume crates
+are stored using lowercase prefixes; if using mixed-case prefixes, adjust as
+directed by the ``TODO`` comments::
 
   server {
     listen 8000 default_server;
@@ -1645,8 +1727,10 @@ directory::
 
     # Support serving of Git repositories via git-http-backend.
     location ~ /git(/.*) {
+
       # TODO: Change to absolute path to mirror/git directory:
       fastcgi_param GIT_PROJECT_ROOT    /ABSOLUTE/PATH/TO/mirror/git;
+
       include       fastcgi_params;
       fastcgi_pass  unix:/var/run/fcgiwrap.socket;
       fastcgi_param SCRIPT_FILENAME     /usr/lib/git-core/git-http-backend;
@@ -1662,12 +1746,48 @@ directory::
     #   abc/abc-{version}.crate     -> 3/a/abc/abc-{version}.crate
     #   abcd*/abcd*-{version}.crate -> ab/cd/abcd*-{version}.crate
 
-    rewrite "^/crates/([^/])/([^/]+)$"                     "/crates/1/$1/$2"  last;
-    rewrite "^/crates/([^/]{2})/([^/]+)$"                  "/crates/2/$1/$2"  last;
-    rewrite "^/crates/([^/])([^/]{2})/([^/]+)$"            "/crates/3/$1/$1$2/$3"  last;
-    rewrite "^/crates/([^/]{2})([^/]{2})([^/]*)/([^/]+)$"  "/crates/$1/$2/$1$2$3/$4" last;
+    # TODO: Comment out this line for mixed-case crate prefixes:
+    rewrite "^/crates/.*$" "$crates_uri"  last;
+
+    # TODO: Uncomment these four lines for mixed-case crate prefixes:
+    # rewrite "^/crates/([^/])/([^/]+)$"                     "/crates/1/$1/$2"  last;
+    # rewrite "^/crates/([^/]{2})/([^/]+)$"                  "/crates/2/$1/$2"  last;
+    # rewrite "^/crates/([^/])([^/]{2})/([^/]+)$"            "/crates/3/$1/$1$2/$3"  last;
+    # rewrite "^/crates/([^/]{2})([^/]{2})([^/]*)/([^/]+)$"  "/crates/$1/$2/$1$2$3/$4" last;
 
   }
+
+Serving crates with lowercase prefixes requires Perl support in nginx (on
+Ubuntu, this requires the package ``nginx-extras`` instead of ``nginx-full``);
+Perl support is not required for mixed-case prefixes.  To serve crates with
+lowercase prefixes, create the file ``/etc/nginx/conf.d/perl.conf`` with the
+below contents::
+
+  # Reference: https://nginx.org/en/docs/http/ngx_http_perl_module.html
+  # Include the perl module
+  perl_modules perl/lib;
+
+  # The variable `$crates_uri` will be computed by the Perl subroutine
+  # below, adding a lowercase prefix as required based on the crate name.
+
+  perl_set $crates_uri 'sub {
+      my $r = shift;
+      my $uri = $r->uri;
+      # Remove all newline characters to avoid CRLF injection vulnerability
+      # (https://stackoverflow.com/questions/3666003/how-i-can-translate-uppercase-to-lowercase-letters-in-a-rewrite-rule-in-nginx-we/68054489#68054489):
+      $uri =~ s/\R//g;
+
+      if ($uri =~ m@^/crates/([^/])/([^/]+)$@) {
+          $uri = "/crates/1/" . "$1/$2";
+      } elsif ($uri =~ m@^/crates/([^/]{2})/([^/]+)$@) {
+          $uri = "/crates/2/" . "$1/$2";
+      } elsif ($uri =~ m@^/crates/([^/])([^/]{2})/([^/]+)$@) {
+          $uri = lc("/crates/3/$1/") . "$1$2/$3";
+      } elsif ($uri =~ m@^/crates/([^/]{2})([^/]{2})([^/]*)/([^/]+)$@) {
+          $uri = lc("/crates/$1/$2/") . "$1$2$3/$4";
+      }
+      return $uri;
+  }';
 
 Activate the ``rust`` site via::
 

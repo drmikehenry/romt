@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 from romt import common
-from romt.crate import crate_prefix_from_name
+import romt.crate
 
 
 description = """\
@@ -79,6 +79,13 @@ class Handler(http.server.CGIHTTPRequestHandler):
     # """
     have_fork = False
 
+    def _crates_config(self) -> romt.crate.CratesConfig:
+        crates_config = getattr(self, "_cached_crates_config", None)
+        if crates_config is None:
+            crates_config = romt.crate._read_crates_config(Path("crates"))
+            self._cached_crates_config = crates_config
+        return crates_config
+
     def _rewrite_path(self) -> None:
         path = self.path
         if path.startswith("/git/"):
@@ -89,13 +96,15 @@ class Handler(http.server.CGIHTTPRequestHandler):
             # /crates/.../<name>/<name>-<version>.crate
             # ->
             # /crates/<prefix>/<name>/<name>-<version>.crate
+            prefix_style = romt.crate._crates_config_prefix_style(
+                self._crates_config()
+            )
             parent = os.path.dirname(path)
             name = os.path.basename(parent)
-            rel_path = "crates/{}/{}/{}".format(
-                crate_prefix_from_name(name), name, os.path.basename(path),
+            prefix = romt.crate.crate_prefix_from_name(name, prefix_style)
+            path = "/crates/{}/{}/{}".format(
+                prefix, name, os.path.basename(path),
             )
-            if os.path.isfile(rel_path):
-                path = "/" + rel_path
 
         if self.path != path:
             common.iprint("Rewrite URL: {} -> {}".format(self.path, path))
@@ -126,7 +135,6 @@ if common.is_windows:
 else:
     GIT_HTTP_BACKEND_SOURCES = [
         "/usr/lib/git-core/git-http-backend",
-
         # Alpine Linux:
         "/usr/libexec/git-core/git-http-backend",
     ]

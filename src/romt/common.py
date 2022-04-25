@@ -9,8 +9,18 @@ import platform
 import re
 import stat
 import tarfile
-from typing import Any, Generator, IO, Iterable, List, Optional, Tuple
+from typing import (
+    Any,
+    Generator,
+    IO,
+    Iterable,
+    List,
+    NoReturn,
+    Optional,
+    Tuple,
+)
 
+import romt.error
 
 is_windows = platform.system() == "Windows"
 
@@ -50,6 +60,11 @@ def iprint(*args: Any, **kwargs: Any) -> None:
 
 def eprint(*args: Any, **kwargs: Any) -> None:
     _print_verbosity(VERBOSITY_ERROR, *args, **kwargs)
+
+
+def abort(*args: Any, **kwargs: Any) -> NoReturn:
+    eprint(*args, **kwargs)
+    raise romt.error.AbortError()
 
 
 def is_date(date: str) -> bool:

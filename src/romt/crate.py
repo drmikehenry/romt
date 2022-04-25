@@ -2,15 +2,19 @@
 # coding=utf-8
 
 import argparse
+import enum
 import json
 import os
 from pathlib import Path
 import re
-from typing import Generator, List, Optional, Tuple
+import shutil
+import tempfile
+from typing import Any, Dict, Generator, List, Optional, Tuple
 import urllib.parse
 
 import git
 import git.remote
+import toml
 import trio
 
 from romt import base
@@ -68,7 +72,119 @@ For complete details, try ``romt --readme`` to view README.rst.
 )
 
 
-def crate_prefix_from_name(name: str) -> str:
+class PrefixStyle(enum.Enum):
+    LOWER = enum.auto()
+    MIXED = enum.auto()
+
+    @classmethod
+    def from_config_str(cls, config_str: str) -> "PrefixStyle":
+        if config_str == "lower":
+            return cls.LOWER
+        assert config_str == "mixed"
+        return cls.MIXED
+
+    def to_config_str(self) -> str:
+        if self is self.LOWER:
+            return "lower"
+        assert self is self.MIXED
+        return "mixed"
+
+
+CratesConfig = Dict[str, Any]
+
+
+def _crates_config_prefix_style(crates_config: CratesConfig) -> PrefixStyle:
+    if crates_config["prefix"] == "mixed":
+        return PrefixStyle.MIXED
+    return PrefixStyle.LOWER
+
+
+def _crates_config_archive_prefix_style(
+    crates_config: CratesConfig,
+) -> PrefixStyle:
+    if crates_config["archive_prefix"] == "mixed":
+        return PrefixStyle.MIXED
+    return PrefixStyle.LOWER
+
+
+def _get_crates_config_path(crates_root_path: Path) -> Path:
+    return crates_root_path / "config.toml"
+
+
+def _legacy_crates_config() -> CratesConfig:
+    return {"prefix": "mixed", "archive_prefix": "mixed"}
+
+
+def _default_crates_config() -> CratesConfig:
+    return {"prefix": "lower", "archive_prefix": "mixed"}
+
+
+def _write_crates_config(
+    crates_root_path: Path, crates_config: CratesConfig
+) -> None:
+    crates_config_path = _get_crates_config_path(crates_root_path)
+    with crates_config_path.open("w") as f:
+        toml.dump(crates_config, f)
+
+
+def _read_crates_config(crates_root_path: Path) -> CratesConfig:
+    crates_config_path = _get_crates_config_path(crates_root_path)
+    if crates_config_path.is_file():
+        crates_config = _default_crates_config()
+        with crates_config_path.open() as f:
+            toml_dict = toml.loads(f.read())
+        if not isinstance(toml_dict, dict):
+            common.abort(
+                "invalid config structure in {}".format(crates_root_path)
+            )
+        for key in toml_dict:
+            if key not in crates_config:
+                common.abort(
+                    "invalid key {} in {}".format(key, crates_root_path)
+                )
+        crates_config.update(toml_dict)
+    else:
+        crates_config = _legacy_crates_config()
+    return crates_config
+
+
+def _prevent_mixed_with_case_insensitive(crates_root_path: Path) -> None:
+    """Raise error.AbortError if MIXED prefixes on case-insensitive share."""
+
+    # If config file is missing, do not prevent legacy access.
+    if not _get_crates_config_path(crates_root_path).is_file():
+        return
+
+    crates_config = _read_crates_config(crates_root_path)
+    prefix_style = _crates_config_prefix_style(crates_config)
+    if prefix_style is PrefixStyle.MIXED:
+        config_path = _get_crates_config_path(crates_root_path)
+        upper_config_path = config_path.with_name(config_path.name.upper())
+        if upper_config_path.exists():
+            common.eprint(
+                "Cannot use mixed-case prefix on case-insensitive share"
+            )
+            raise error.AbortError
+
+
+def crate_name_version_from_rel_path(rel_path: str) -> Tuple[str, str]:
+    m = re.search(
+        r"""
+        /
+        (?P<name> [^/]+)
+        /
+        (?P=name) - (?P<version> [^/]+) \.crate
+        $
+        """,
+        rel_path,
+        re.VERBOSE,
+    )
+    if m:
+        return m.group("name"), m.group("version")
+    return "", ""
+
+
+def crate_prefix_from_name(name: str, prefix_style: PrefixStyle) -> str:
     if len(name) == 1:
         prefix = "1"
     elif len(name) == 2:
@@ -77,12 +193,21 @@ def crate_prefix_from_name(name: str) -> str:
         prefix = "3/{}".format(name[0])
     else:
         prefix = "{}/{}".format(name[:2], name[2:4])
+    if prefix_style is PrefixStyle.LOWER:
+        prefix = prefix.lower()
     return prefix
 
 
-def crate_rel_path_from_name_version(name: str, version: str) -> Path:
-    prefix = crate_prefix_from_name(name)
-    return Path(prefix) / name / "{}-{}.crate".format(name, version)
+def crate_basename_from_name_version(name: str, version: str) -> str:
+    return "{}-{}.crate".format(name, version)
+
+
+def crate_rel_path_from_name_version(
+    name: str, version: str, prefix_style: PrefixStyle
+) -> Path:
+    prefix = crate_prefix_from_name(name, prefix_style)
+    basename = crate_basename_from_name_version(name, version)
+    return Path(prefix) / name / basename
 
 
 def blobs_in_commit_range(
@@ -118,8 +243,16 @@ class Crate:
     def ident(self) -> Tuple[str, str]:
         return self.name, self.version
 
-    def rel_path(self) -> Path:
-        return crate_rel_path_from_name_version(self.name, self.version)
+    def prefix(self, prefix_style: PrefixStyle) -> str:
+        return crate_prefix_from_name(self.name, prefix_style)
+
+    def basename(self) -> str:
+        return crate_basename_from_name_version(self.name, self.version)
+
+    def rel_path(self, prefix_style: PrefixStyle) -> Path:
+        return crate_rel_path_from_name_version(
+            self.name, self.version, prefix_style
+        )
 
 
 def blob_lines(blob: bytes) -> Generator[str, None, None]:
@@ -252,7 +385,7 @@ def mark(repo: git.Repo, end: str) -> None:
 
 def list_crates(crates: List[Crate]) -> None:
     for crate in crates:
-        common.iprint(crate.rel_path().name)
+        common.iprint(crate.basename())
 
 
 def _process_crates(
@@ -274,9 +407,12 @@ def _process_crates(
 
     limiter = downloader.new_limiter()
 
+    crates_config = _read_crates_config(crates_root)
+    prefix_style = _crates_config_prefix_style(crates_config)
+
     async def _process_one(crate: Crate) -> None:
         nonlocal num_good_paths, num_bad_paths
-        rel_path = crate.rel_path()
+        rel_path = crate.rel_path(prefix_style)
         path = crates_root / rel_path
         is_good = False
         try:
@@ -382,21 +518,35 @@ def pack(
     num_good_paths = 0
     num_bad_paths = 0
 
+    crates_config = _read_crates_config(crates_root)
+    prefix_style = _crates_config_prefix_style(crates_config)
+    archive_prefix_style = _crates_config_archive_prefix_style(crates_config)
+
     with common.tar_context(archive_path, "w") as tar_f:
+        archive_format = b"1\n"
+        if archive_prefix_style == PrefixStyle.LOWER:
+            archive_format = b"2\n"
+        with tempfile.NamedTemporaryFile() as f:
+            f.write(archive_format)
+            f.flush()
+            tar_f.add(f.name, "ARCHIVE_FORMAT")
+
         if bundle_path is not None:
             packed_name = INDEX_BUNDLE_PACKED_NAME
             common.vprint("[pack] {}".format(packed_name))
             tar_f.add(str(bundle_path), packed_name)
-        for rel_path in sorted(crate.rel_path() for crate in crates):
-            path = crates_root / rel_path
-            packed_name = "crates/" + rel_path.as_posix()
+
+        for crate in sorted(crates, key=lambda crate: crate.ident):
+            path = crates_root / crate.rel_path(prefix_style)
+            packed_rel_path = crate.rel_path(archive_prefix_style)
+            packed_name = "crates/" + packed_rel_path.as_posix()
             try:
-                common.vprint("[pack] {}".format(rel_path.name))
+                common.vprint("[pack] {}".format(crate.basename()))
                 tar_f.add(str(path), packed_name)
                 num_good_paths += 1
             except FileNotFoundError:
                 num_bad_paths += 1
-                common.eprint("Error: Missing {}".format(rel_path))
+                common.eprint("Error: Missing {}".format(crate.basename()))
                 if not keep_going:
                     raise error.AbortError()
 
@@ -416,35 +566,73 @@ def unpack(
     crates_prefix = "crates/"
     found_bundle = False
 
+    crates_config = _read_crates_config(crates_root)
+    prefix_style = _crates_config_prefix_style(crates_config)
+    archive_prefix_style = PrefixStyle.MIXED
+    found_file = False
+
     with common.tar_context(archive_path, "r") as tar_f:
         for tar_info in tar_f:
             if tar_info.isdir():
                 continue
+            elif tar_info.name == "ARCHIVE_FORMAT":
+                if found_file:
+                    common.abort(
+                        "Unexpected ARCHIVE_FORMAT (not at archive start)"
+                    )
+
+                found_file = True
+                reader = tar_f.extractfile(tar_info)
+                if reader is None:
+                    common.abort("Invalid ARCHIVE_FORMAT (unreadable)")
+
+                archive_format = reader.read().decode(errors="replace").strip()
+                if archive_format == "1":
+                    archive_prefix_style = PrefixStyle.MIXED
+                elif archive_format == "2":
+                    archive_prefix_style = PrefixStyle.LOWER
+                else:
+                    common.abort(f"Invalid ARCHIVE_FORMAT {archive_format!r}")
+                common.vprint(f"Detected archive_format {archive_format} ")
+
             elif tar_info.name == INDEX_BUNDLE_PACKED_NAME:
+                found_file = True
                 found_bundle = True
                 tar_info.name = str(bundle_path)
                 common.vprint("[unpack] {}".format(tar_info.name))
                 tar_f.extract(tar_info)
 
             elif tar_info.name.startswith(crates_prefix):
-                num_crates += 1
-                tar_info.name = tar_info.name[len(crates_prefix) :]
+                found_file = True
+                name, version = crate_name_version_from_rel_path(tar_info.name)
+                if not name or not version:
+                    common.abort("Invalid crate {}".format(tar_info.name))
+                expected_rel_path = crate_rel_path_from_name_version(
+                    name, version, archive_prefix_style
+                ).as_posix()
+                actual_rel_path = tar_info.name[len(crates_prefix) :]
+                if actual_rel_path != expected_rel_path:
+                    common.abort(
+                        "Unexpected crate prefix for {}".format(tar_info.name)
+                    )
+
+                rel_path = crate_rel_path_from_name_version(
+                    name, version, prefix_style
+                )
+                tar_info.name = str(rel_path)
                 common.vprint(
                     "[unpack] {}".format(os.path.basename(tar_info.name))
                 )
                 tar_f.extract(tar_info, str(crates_root))
+                num_crates += 1
 
             else:
-                common.eprint(
+                common.abort(
                     "Unexpected archive member {}".format(tar_info.name)
                 )
-                if not keep_going:
-                    raise error.AbortError()
 
     if not found_bundle:
-        common.eprint("Missing {} in archive".format(INDEX_BUNDLE_PACKED_NAME))
-        if not keep_going:
-            raise error.AbortError()
+        common.abort("Missing {} in archive".format(INDEX_BUNDLE_PACKED_NAME))
 
     common.iprint("{} extracted crates".format(num_crates))
 
@@ -507,12 +695,36 @@ def merge_origin_master(repo: git.Repo) -> None:
 
 
 def _init_common(
-    index_path: Path, origin_location: str, crates_root_path: Path
+    index_path: Path,
+    origin_location: str,
+    crates_root_path: Path,
+    prefix_style: PrefixStyle,
 ) -> git.Repo:
-    if index_path.is_dir():
+    if index_path.exists():
         raise error.UsageError(
             "index directory {} already exists".format(repr(str(index_path)))
         )
+    if crates_root_path.exists():
+        raise error.UsageError(
+            "crates directory {} already exists".format(
+                repr(str(crates_root_path))
+            )
+        )
+    common.iprint(
+        "create crates directory at {}:".format(repr(str(crates_root_path)))
+    )
+    crates_root_path.mkdir(parents=True)
+    crates_config = _default_crates_config()
+    crates_config["prefix"] = prefix_style.to_config_str()
+    _write_crates_config(crates_root_path, crates_config)
+
+    # Disallow MIXED style on case-insensitive filesystem:
+    try:
+        _prevent_mixed_with_case_insensitive(crates_root_path)
+    except error.AbortError:
+        shutil.rmtree(crates_root_path)
+        raise
+
     common.iprint(
         "create index repository at {}:".format(repr(str(index_path)))
     )
@@ -529,25 +741,26 @@ def _init_common(
     with repo.config_writer() as writer:
         writer.set_value('branch "working"', "remote", "origin")
         writer.set_value('branch "working"', "merge", "refs/heads/master")
-
-    if not crates_root_path.is_dir():
-        common.iprint(
-            "create crates directory at {}:".format(
-                repr(str(crates_root_path))
-            )
-        )
-        crates_root_path.mkdir(parents=True)
     return repo
 
 
-def init(index_path: Path, index_url: str, crates_root_path: Path) -> None:
-    _init_common(index_path, index_url, crates_root_path)
+def init(
+    index_path: Path,
+    index_url: str,
+    crates_root_path: Path,
+    prefix_style: PrefixStyle,
+) -> None:
+    _init_common(index_path, index_url, crates_root_path, prefix_style)
 
 
-def init_import(index_path: Path, crates_root_path: Path) -> None:
+def init_import(
+    index_path: Path, crates_root_path: Path, prefix_style: PrefixStyle
+) -> None:
     bundle_path = index_path / INDEX_BUNDLE_NAME
     bundle_location = str(bundle_path.absolute())
-    repo = _init_common(index_path, bundle_location, crates_root_path)
+    repo = _init_common(
+        index_path, bundle_location, crates_root_path, prefix_style
+    )
     with repo.config_writer() as writer:
         writer.set_value(
             'remote "origin"', "fetch", "+refs/heads/*:refs/remotes/origin/*"
@@ -682,6 +895,14 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         help="""base URL for server configured into INDEX/config.json by
             ``config`` command (default=%(default)s)
         """,
+    )
+
+    parser.add_argument(
+        "--prefix",
+        dest="prefix_style",
+        choices=["mixed", "lower"],
+        default="lower",
+        help="crate path prefix style (default=%(default)s)",
     )
 
     parser.add_argument(
@@ -874,6 +1095,7 @@ class Main(base.BaseMain):
 
     def cmd_init(self) -> None:
         index_path = Path(self.args.index)
+        prefix_style = PrefixStyle.from_config_str(self.args.prefix_style)
         index_url = self.args.index_url
         parsed = urllib.parse.urlparse(index_url)
         if not parsed.scheme and not parsed.netloc:
@@ -883,11 +1105,12 @@ class Main(base.BaseMain):
             # interpreted to be relative to the .git/ directory, which changes
             # their meaning.
             index_url = os.path.abspath(index_url)
-        init(index_path, index_url, Path(self.args.crates))
+        init(index_path, index_url, Path(self.args.crates), prefix_style)
 
     def cmd_init_import(self) -> None:
         index_path = Path(self.args.index)
-        init_import(index_path, Path(self.args.crates))
+        prefix_style = PrefixStyle.from_config_str(self.args.prefix_style)
+        init_import(index_path, Path(self.args.crates), prefix_style)
 
     def cmd_config(self) -> None:
         self.forget_crates()
@@ -898,6 +1121,9 @@ class Main(base.BaseMain):
         if not self.args.start:
             self.args.start = "mark"
             self.args.allow_missing_start = True
+
+        crates_root_path = Path(self.args.crates)
+        _prevent_mixed_with_case_insensitive(crates_root_path)
 
         commands = self.get_commands()
 

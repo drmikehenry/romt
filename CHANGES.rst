@@ -2,6 +2,19 @@
 History
 *******
 
+Version 0.4.0
+=============
+
+- **NOTE** If upgrading from older Romt, it's recommended to use the same
+  version of Romt on the Internet-connected machine and the offline machine.
+  See ``Upgrading from Romt versions before 0.4.0`` in the README.rst for
+  details.
+
+- Add support for lowercase crate prefixes in CRATES_ROOT.  This avoids problems
+  when using a crate mirror with both case-sensitive and case-insensitive
+  filesystems simultaneously; see https://github.com/drmikehenry/romt/issues/14.
+  See README.rst for details.
+
 Version 0.3.4
 =============
 
