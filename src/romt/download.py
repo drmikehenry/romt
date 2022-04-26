@@ -20,8 +20,9 @@ from romt import signature
 
 
 class Downloader:
-    def __init__(self, num_jobs: int) -> None:
-        self._client = httpx.AsyncClient()
+    def __init__(self, num_jobs: int, timeout_seconds: int) -> None:
+        timeout = timeout_seconds if timeout_seconds > 0 else None
+        self._client = httpx.AsyncClient(timeout=timeout)
         self.sig_verifier = signature.Verifier()
         self._warn_signature = False
         self.num_jobs = num_jobs

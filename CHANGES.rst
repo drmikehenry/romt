@@ -15,6 +15,10 @@ Version 0.4.0
   filesystems simultaneously; see https://github.com/drmikehenry/romt/issues/14.
   See README.rst for details.
 
+- Add ``--timeout`` option to control the timeout in seconds for downloading.
+  Change default timeout from five seconds (the default for the ``httpx``
+  library) to sixty seconds.  A value of ``0`` disables the timeout altogether.
+
 Version 0.3.4
 =============
 

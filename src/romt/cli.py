@@ -96,6 +96,15 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
         help="number of simultaneous download jobs (default %(default)s)",
     )
 
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        dest="timeout_seconds",
+        default=60,
+        action="store",
+        help="download timeout seconds (default %(default)s; 0 => no timeout)",
+    )
+
 
 def make_parser() -> argparse.ArgumentParser:
     common_parser = argparse.ArgumentParser(add_help=False)

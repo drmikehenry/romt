@@ -574,6 +574,9 @@ Command-line option details
   may use at a time.  By default, ``--num-jobs=4``, which should be a
   conservative value that won't stress the servers heavily.
 
+- The option ``--timeout`` controls the timeout in seconds for downloading.
+  A value of zero disables the timeout functionality altogether.
+
 - The option ``--assume-ok`` instructs Romt that all files already on-disk are
   to be assumed OK; no hashes or signatures are checked for such files.
 
@@ -1889,6 +1892,19 @@ https://www.python-httpx.org/environment_variables/).  As a sample invocation on
 Linux::
 
   HTTPX_LOG_LEVEL=trace romt toolchain -v -s nightly -t all fetch-manifest
+
+Download timeouts
+-----------------
+
+Romt 0.3.0 added support for simultaneous downloading based on the ``httpx``
+library; this came with a a default timeout of five seconds which can lead to
+``ConnectTimeout`` or ``ReadTimeout`` errors depending on choice of
+``--num-jobs`` and network characteristics (see
+https://github.com/drmikehenry/romt/issues/16).
+
+Romt 0.4.0 adds a ``--timeout`` switch to control this timeout, and changed the
+default value to sixty seconds.  If timeouts are still occurring, use a larger
+timeout value (or use ``--timeout 0`` to disable timeouts altogether).
 
 Reference
 =========
