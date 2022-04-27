@@ -593,6 +593,23 @@ class Main(dist.DistMain):
         for target in targets:
             common.iprint("  {}".format(target))
 
+        # If the list of targets was given explicitly, it will be the same
+        # for all specs; but if ``--targets all`` was used, the list can vary
+        # if one spec supports more targets than another.
+        # Detect this case by checking whether all targets for each spec are
+        # present in the detected targets, and convert back to ``all``.
+        if len(specs) > 1:
+            have_all_targets = True
+            detected_targets = set(targets)
+            for spec in specs:
+                manifest = self.select_manifest(spec, download=False)
+                spec_targets = set(manifest.available_targets())
+                if spec_targets.intersection(detected_targets) != spec_targets:
+                    have_all_targets = False
+                    break
+            if have_all_targets:
+                targets = ["all"]
+
         self.specs = specs
         self.targets = targets
 

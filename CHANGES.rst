@@ -19,6 +19,18 @@ Version 0.4.0
   Change default timeout from five seconds (the default for the ``httpx``
   library) to sixty seconds.  A value of ``0`` disables the timeout altogether.
 
+- Fix toolchain unpacking of archives created with multiple specs and
+  ``--targets=all`` (see https://github.com/drmikehenry/romt/issues/17).  When
+  packing a toolchain archive, the specs and targets are specified
+  independently, so typically each spec must use the same list of targets; but
+  the special target ``all`` is expanded to a per-spec list of targets during
+  packing.  During unpacking, Romt had been detecting the union of all targets
+  present in the archive and applying this set of targets to all detected specs
+  in the archive, causing problems if one spec supported more targets than the
+  others.  Now Romt detects archives that contain all targets for all included
+  specs and converts back to the special ``all`` target for verification and
+  further processing.
+
 Version 0.3.4
 =============
 
