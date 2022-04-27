@@ -20,7 +20,7 @@ Version 0.4.0
   library) to sixty seconds.  A value of ``0`` disables the timeout altogether.
 
 - Fix toolchain unpacking of archives created with multiple specs and
-  ``--targets=all`` (see https://github.com/drmikehenry/romt/issues/17).  When
+  ``--target=all`` (see https://github.com/drmikehenry/romt/issues/17).  When
   packing a toolchain archive, the specs and targets are specified
   independently, so typically each spec must use the same list of targets; but
   the special target ``all`` is expanded to a per-spec list of targets during

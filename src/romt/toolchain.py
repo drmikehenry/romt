@@ -594,7 +594,7 @@ class Main(dist.DistMain):
             common.iprint("  {}".format(target))
 
         # If the list of targets was given explicitly, it will be the same
-        # for all specs; but if ``--targets all`` was used, the list can vary
+        # for all specs; but if ``--target all`` was used, the list can vary
         # if one spec supports more targets than another.
         # Detect this case by checking whether all targets for each spec are
         # present in the detected targets, and convert back to ``all``.
