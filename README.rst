@@ -262,6 +262,20 @@ configuration with mirrored Rust content.
     should be expected.  The ``--keep-going`` option allows romt to continue
     in the face of these missing crates.
 
+    Currently (April 2022), versions of the following crates are missing:
+
+    - bork
+    - css-modules
+    - css-modules-macros
+    - deploy
+    - doccy
+    - etch
+    - glib-2-0-sys
+    - glue
+    - gobject-2-0-sys
+    - peek
+    - pose
+
 - Configure crate mirror to be served from localhost (one-time only):
 
   .. code-block:: sh
