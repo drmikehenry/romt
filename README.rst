@@ -703,7 +703,7 @@ For example, after downloading with this command:
 
 .. code-block:: sh
 
-  romt toolchain download --spec nightly-2020-04-30 --target linux
+  romt toolchain download --select nightly-2020-04-30 --target linux
 
 The tree would contain (among other files)::
 
@@ -733,7 +733,7 @@ of:
 - ``beta-2020-04-26``
 - ``stable-2020-04-23`` (version ``1.43.0``)
 
-On that date, performing a download with ``--target linux`` and ``--spec
+On that date, performing a download with ``--target linux`` and ``--select
 nightly,beta,stable`` would yield the following downloaded manifests::
 
   dist/
@@ -1023,7 +1023,7 @@ downloading with this command:
 
 .. code-block:: sh
 
-  romt rustup download --spec stable --target linux
+  romt rustup download --select stable --target linux
 
 The tree would contain::
 
