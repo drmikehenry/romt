@@ -7,23 +7,13 @@
 anyio==3.3.0
     # via httpcore
 async-generator==1.10
-    # via
-    #   httpx
-    #   trio
+    # via trio
 attrs==21.2.0
     # via
     #   outcome
     #   trio
-certifi==2019.9.11
+certifi==2022.12.7
     # via httpx
-contextvars==2.4
-    # via
-    #   sniffio
-    #   trio
-dataclasses==0.8.0 ; python_version < "3.7"
-    # via
-    #   -r requirements.in
-    #   anyio
 gitdb2==2.0.6
     # via gitpython
 gitpython==3.0.5
@@ -39,8 +29,6 @@ idna==2.8
     #   anyio
     #   rfc3986
     #   trio
-immutables==0.15
-    # via contextvars
 outcome==1.1.0
     # via trio
 python-gnupg==0.4.6
@@ -61,5 +49,3 @@ toml==0.10.0
     # via -r requirements.in
 trio==0.19.0
     # via -r requirements.in
-typing-extensions==3.10.0.0
-    # via anyio
