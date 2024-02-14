@@ -1,3 +1,27 @@
 [tool.black]
 line-length = 79
 target-version = ["py35"]
+
+[tool.ruff]
+ignore = [
+    "N811",
+    "N812",
+    "N813",
+    "N814",
+]
+line-length = 79
+select = [
+    "C9",
+    "E",
+    "F",
+    "N",
+    "Q",
+    "W",
+]
+
+[tool.ruff.flake8-quotes]
+inline-quotes = "double"
+
+[tool.ruff.mccabe]
+max-complexity = 15
+
