@@ -7,11 +7,13 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
+    Dict,
     Generator,
     Iterable,
     List,
     MutableMapping,
     Optional,
+    Tuple,
 )
 
 import toml
@@ -36,6 +38,20 @@ class Package:
         self.target = target
         self.available = details["available"]
         self.xz_url = details.get("xz_url", "")
+
+    def _fields(self) -> Tuple[str, str]:
+        return (self.name, self.target)
+
+    def __repr__(self) -> str:
+        return f"Package {{ name={self.name}, target={self.target} }}"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Package):
+            return False
+        return self._fields() == other._fields()
+
+    def __hash__(self) -> int:
+        return hash(self._fields())
 
     @property
     def has_rel_path(self) -> bool:
@@ -102,73 +118,106 @@ class Manifest:
     def ident(self) -> str:
         return "{}({})".format(self.spec, self.version)
 
-    def set_package_available(
-        self, package_name: str, target: str, available: bool = True
-    ) -> None:
-        details = self._dict["pkg"][package_name]["target"][target]
-        if available and "xz_url" not in details:
-            raise error.AbortError(
-                "package {}/{} set available but missing xz_url".format(
-                    package_name, target
-                )
-            )
-        details["available"] = available
-
     def get_package(self, package_name: str, target: str) -> Package:
         details = self._dict["pkg"][package_name]["target"][target]
         return Package(package_name, target, details)
 
-    def gen_packages(self) -> Generator[Package, None, None]:
+    def gen_all_packages(self) -> Generator[Package, None, None]:
         """Generate Package for all (name, target) in manifest."""
         for name, package_dict in self._dict["pkg"].items():
             for target in package_dict["target"].keys():
                 yield self.get_package(name, target)
 
     def gen_available_packages(
-        self, *, targets: Optional[Iterable[str]] = None
+        self,
+        *,
+        targets: Optional[Iterable[str]] = None,
+        rel_path_is_present: Optional[Callable[[str], bool]] = None,
     ) -> Generator[Package, None, None]:
-        """gen_packages() for available packages matching targets."""
-        for package in self.gen_packages():
-            if package.available:
-                if targets is None or target_matches_any(
-                    package.target, targets
-                ):
-                    yield package
+        """available packages matching targets and "present"."""
+        if targets is None:
+            target_list = ["*"]
+        else:
+            target_list = list(targets)
+        for package in self.gen_all_packages():
+            if (
+                package.available
+                and target_matches_any(package.target, target_list)
+                and (
+                    rel_path_is_present is None
+                    or rel_path_is_present(package.rel_path)
+                )
+            ):
+                yield package
 
-    def available_packages(self) -> List[Package]:
-        return list(self.gen_available_packages())
-
-    def _targets_from_packages(self, packages: Iterable[Package]) -> List[str]:
-        targets = set(p.target for p in packages)
+    def all_targets(self) -> List[str]:
+        targets = set(p.target for p in self.gen_all_packages())
         targets.discard("*")
         return sorted(targets)
 
-    def all_targets(self) -> List[str]:
-        return self._targets_from_packages(self.gen_packages())
-
-    def available_targets(self) -> List[str]:
-        return self._targets_from_packages(self.gen_available_packages())
-
-    def present_targets(
-        self, rel_path_is_present: Callable[[str], bool]
+    def available_targets(
+        self,
+        *,
+        targets: Optional[Iterable[str]] = None,
+        rel_path_is_present: Optional[Callable[[str], bool]] = None,
     ) -> List[str]:
-        targets = set()
-        target_paths = collections.defaultdict(set)
-        path_targets = collections.defaultdict(set)
+        available_targets = set(
+            p.target
+            for p in self.gen_available_packages(
+                targets=targets,
+                rel_path_is_present=rel_path_is_present,
+            )
+        )
+        available_targets.discard("*")
+        return sorted(available_targets)
+
+    def available_target_types(
+        self,
+        *,
+        targets: Optional[Iterable[str]] = None,
+        rel_path_is_present: Optional[Callable[[str], bool]] = None,
+    ) -> Dict[str, str]:
+        target_packages = collections.defaultdict(set)
+        rel_path_targets = collections.defaultdict(set)
         for package in self.gen_available_packages():
-            if package.target != "*":
-                target_paths[package.target].add(package.rel_path)
-                path_targets[package.rel_path].add(package.target)
+            # No need to discard the case `target == "*"`.
+            target_packages[package.target].add(package)
+            rel_path_targets[package.rel_path].add(package.target)
 
-        for target, paths in target_paths.items():
-            missing_some_path = False
-            have_unique_path = False
-            for path in paths:
-                if not rel_path_is_present(path):
-                    missing_some_path = True
-                elif len(path_targets[path]) == 1:
-                    have_unique_path = True
-            if have_unique_path or not missing_some_path:
-                targets.add(target)
+        target_types: Dict[str, str] = {}
+        if targets is not None:
+            target_list = list(targets)
+        else:
+            target_list = self.available_targets()
+        for target in sorted(target_list):
+            packages = target_packages[target]
+            if not packages:
+                continue
+            have_all_rel_paths = True
+            have_unique_rel_path = False
+            have_rustc = False
+            have_rust_std = False
+            for package in packages:
+                is_present = (
+                    rel_path_is_present is None
+                    or rel_path_is_present(package.rel_path)
+                )
+                if is_present:
+                    if package.name == "rustc":
+                        have_rustc = True
+                    elif package.name == "rust-std":
+                        have_rust_std = True
+                    if len(rel_path_targets[package.rel_path]) == 1:
+                        have_unique_rel_path = True
+                else:
+                    have_all_rel_paths = False
+            if have_unique_rel_path or have_all_rel_paths:
+                if have_rustc:
+                    target_type = "native-target"
+                elif have_rust_std:
+                    target_type = "cross-target"
+                else:
+                    target_type = "minimal"
+                target_types[target] = target_type
 
-        return sorted(targets)
+        return target_types

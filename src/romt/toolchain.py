@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import shutil
 from typing import (
+    Dict,
     Iterable,
     List,
     Set,
@@ -154,6 +155,12 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--cross",
+        action="store_true",
+        help="""download only `rust-std` (for cross-compilation)""",
+    )
+
+    parser.add_argument(
         "--dest",
         action="store",
         default="dist",
@@ -202,6 +209,7 @@ class Main(dist.DistMain):
         super().__init__(args)
         self.downloader.set_warn_signature(args.warn_signature)
         self._with_sig = not args.no_signature
+        self.cross = args.cross
 
     def manifest_url_path(self, date: str, channel: str) -> Tuple[str, Path]:
         rel_path = channel_rel_path(date, channel)
@@ -303,33 +311,33 @@ class Main(dist.DistMain):
             adjusted_specs.extend(self.expand_wild_spec(spec))
         return dist.require_specs(adjusted_specs)
 
+    def _rel_path_is_downloaded(self, rel_path: str) -> bool:
+        dest_path = self.dest_path_from_rel_path(rel_path)
+        return dest_path.is_file()
+
     def downloaded_packages(self, manifest: Manifest) -> List[Package]:
-        packages = []
-        for package_info in manifest.gen_available_packages():
-            dest_path = self.dest_path_from_rel_path(package_info.rel_path)
-            if dest_path.is_file():
-                packages.append(package_info)
-        return packages
+        return list(
+            manifest.gen_available_packages(
+                rel_path_is_present=self._rel_path_is_downloaded
+            )
+        )
 
-    def downloaded_targets(self, manifest: Manifest) -> List[str]:
-        def is_present(rel_path: str) -> bool:
-            dest_path = self.dest_path_from_rel_path(rel_path)
-            return dest_path.is_file()
-
-        targets = manifest.present_targets(is_present)
-        return sorted(targets)
+    def downloaded_target_types(self, manifest: Manifest) -> Dict[str, str]:
+        return manifest.available_target_types(
+            rel_path_is_present=self._rel_path_is_downloaded
+        )
 
     def adjust_targets(
         self, manifest: Manifest, base_targets: List[str]
     ) -> List[str]:
-        possible_targets = set(p.target for p in manifest.gen_packages())
+        all_targets = set(manifest.all_targets())
         targets = set()
         for target in base_targets:
             if target == "all":
-                targets.update(possible_targets)
+                targets.update(all_targets)
             elif target == "*":
-                targets.update(self.downloaded_targets(manifest))
-            elif target not in possible_targets:
+                targets.update(self.downloaded_target_types(manifest))
+            elif target not in all_targets:
                 raise error.UsageError(
                     "target {} not found in manifest".format(repr(target))
                 )
@@ -397,8 +405,39 @@ class Main(dist.DistMain):
                     dest_path,
                 )
 
+    def downloaded_target_packages(
+        self,
+        manifest: Manifest,
+        *,
+        targets: Iterable[str],
+    ) -> Set[Package]:
+        packages = set()
+        for target in targets:
+            # In most cases, we need all available packages.
+            target_packages = set(
+                manifest.gen_available_packages(targets=[target])
+            )
+            target_types = manifest.available_target_types(
+                targets=[target],
+                rel_path_is_present=self._rel_path_is_downloaded,
+            )
+            if target_types[target] == "cross-target":
+                # Reduce `packages` to only those present.
+                target_packages = set(
+                    p
+                    for p in target_packages
+                    if self._rel_path_is_downloaded(p.rel_path)
+                )
+            packages.update(target_packages)
+        return packages
+
     def _download_verify(
-        self, download: bool, specs: List[str], base_targets: List[str]
+        self,
+        *,
+        download: bool,
+        cross: bool,
+        specs: List[str],
+        base_targets: List[str],
     ) -> None:
         processed_paths = set()  # type: Set[Path]
         for spec in specs:
@@ -409,9 +448,19 @@ class Main(dist.DistMain):
                 spec, download=download, canonical=True
             )
             common.iprint("  ident: {}".format(manifest.ident))
-
             targets = self.adjust_targets(manifest, base_targets)
-            packages = list(manifest.gen_available_packages(targets=targets))
+            if download:
+                packages = set(
+                    manifest.gen_available_packages(targets=targets)
+                )
+                if cross:
+                    # When downloading a cross-target, keep only the
+                    # Rust standard library package.
+                    packages = {p for p in packages if p.name == "rust-std"}
+            else:
+                packages = self.downloaded_target_packages(
+                    manifest, targets=targets
+                )
             common.iprint(
                 "  packages: {}, targets: {}".format(
                     len(packages), len(targets)
@@ -431,14 +480,17 @@ class Main(dist.DistMain):
         specs = self.adjust_download_specs(self.specs)
         base_targets = dist.require_targets(self.targets)
         self._download_verify(
-            download=True, specs=specs, base_targets=base_targets
+            download=True,
+            cross=self.cross,
+            specs=specs,
+            base_targets=base_targets,
         )
 
     def cmd_verify(self) -> None:
         specs = self.adjust_wild_specs(self.specs)
         base_targets = dist.require_targets(self.targets, default="*")
         self._download_verify(
-            download=False, specs=specs, base_targets=base_targets
+            download=False, cross=False, specs=specs, base_targets=base_targets
         )
 
     def cmd_list(self) -> None:
@@ -448,16 +500,19 @@ class Main(dist.DistMain):
             common.vprint("List: {}".format(spec))
             manifest = self.select_manifest(spec, download=False)
             if show_details:
-                available_packages = manifest.available_packages()
-                available_targets = manifest.available_targets()
+                available_packages = list(manifest.gen_available_packages())
+                available_targets = sorted(manifest.available_target_types())
                 packages = self.downloaded_packages(manifest)
-                targets = self.downloaded_targets(manifest)
+                target_types = self.downloaded_target_types(manifest)
+                targets = list(target_types)
 
                 target_out = "targets[{}/{}]".format(
-                    len(targets), len(available_targets),
+                    len(targets),
+                    len(available_targets),
                 )
                 package_out = "packages[{}/{}]".format(
-                    len(packages), len(available_packages),
+                    len(packages),
+                    len(available_packages),
                 )
                 # Example output:
                 #   stable-2020-01-30(1.41.0)    \
@@ -467,8 +522,8 @@ class Main(dist.DistMain):
                         manifest.ident, target_out, package_out
                     )
                 )
-                for target in targets:
-                    common.iprint("  {}".format(target))
+                for target, target_type in target_types.items():
+                    common.iprint("  {:45} {}".format(target, target_type))
             else:
                 common.eprint(manifest.ident)
 
@@ -513,8 +568,9 @@ class Main(dist.DistMain):
                 common.iprint("  ident: {}".format(manifest.ident))
 
                 targets = self.adjust_targets(manifest, base_targets)
-                packages = list(
-                    manifest.gen_available_packages(targets=targets)
+                packages = sorted(
+                    self.downloaded_target_packages(manifest, targets=targets),
+                    key=lambda p: (p.target, p.name)
                 )
                 common.iprint(
                     "  packages: {}, targets: {}".format(
@@ -555,12 +611,13 @@ class Main(dist.DistMain):
     def _detect_targets(
         self, specs: List[str], rel_paths: Set[str]
     ) -> List[str]:
-        targets = set()
+        targets: Set[str] = set()
         for spec in specs:
             manifest = self.select_manifest(spec, download=False)
-            targets.update(
-                manifest.present_targets(lambda path: path in rel_paths)
+            target_types = manifest.available_target_types(
+                rel_path_is_present=lambda path: path in rel_paths
             )
+            targets.update(target for target in target_types)
         return sorted(targets)
 
     def cmd_unpack(self) -> None:
@@ -603,7 +660,7 @@ class Main(dist.DistMain):
             detected_targets = set(targets)
             for spec in specs:
                 manifest = self.select_manifest(spec, download=False)
-                spec_targets = set(manifest.available_targets())
+                spec_targets = set(manifest.available_target_types())
                 if spec_targets.intersection(detected_targets) != spec_targets:
                     have_all_targets = False
                     break
