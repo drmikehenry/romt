@@ -464,6 +464,12 @@ localhost using either Quick-start server configuration above.
     [http]
     check-revoke = false
 
+    # For greatly improved performance, have Cargo use the Git command-line
+    # client to acquire `crates.io-index` repository. See
+    # https://github.com/rust-lang/cargo/issues/9167 for details.
+    [net]
+    git-fetch-with-cli = true
+
 - Create a sample project to demonstrate crate usage:
 
   .. code-block:: sh
