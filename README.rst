@@ -454,8 +454,8 @@ localhost using either Quick-start server configuration above.
     rustup self update
     rustup component add rust-src
 
-- Create the text file ``~/.cargo/config`` (``%USERPROFILE%\.cargo\config`` on
-  Windows) with the following content::
+- Create the text file ``~/.cargo/config.toml``
+  (``%USERPROFILE%\.cargo\config.toml`` on Windows) with the following content::
 
     [source.crates-io]
     registry = 'http://localhost:8000/git/crates.io-index'
