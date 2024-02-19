@@ -12,7 +12,7 @@ language tools and crates for use in an offline context.
 keywords = "Rust mirror toolchain crates"
 
 
-__version__ = None
+__version__ = "0.0.0"
 for line in open(f"src/{NAME}/cli.py", encoding="utf-8"):
     if line.startswith("__version__"):
         __version__ = line.split('"')[1]

@@ -237,7 +237,7 @@ class Main(dist.DistMain):
         return dist.require_specs(specs)
 
     def expand_wild_spec(self, spec: str) -> List[str]:
-        specs = []  # type: List[str]
+        specs: List[str] = []
         validate_spec(spec)
         if spec == "*":
             specs.extend(self.downloaded_versions())

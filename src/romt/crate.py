@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import tempfile
+import typing
 from typing import Any, Dict, Generator, List, Optional, Tuple
 import urllib.parse
 
@@ -225,8 +226,9 @@ def blobs_in_commit_range(
                 yield diff.a_path, b_blob, a_blob
     else:
         for item in end_commit.tree.traverse():
-            if item.type == "blob":
-                yield item.path, b"", item.data_stream.read()
+            if getattr(item, "type") == "blob":
+                blob = typing.cast(git.objects.Blob, item)
+                yield str(blob.path), b"", blob.data_stream.read()
 
 
 class Crate:
@@ -636,6 +638,8 @@ def unpack(
 
 
 def _config_json_path(repo: git.Repo) -> Path:
+    if repo.working_tree_dir is None:
+        raise error.UsageError("INDEX lacks a work tree")
     working_tree = Path(repo.working_tree_dir)
     config_path = working_tree / "config.json"
     return config_path
@@ -643,7 +647,7 @@ def _config_json_path(repo: git.Repo) -> Path:
 
 def read_config_json(repo: git.Repo) -> Optional[bytes]:
     config_path = _config_json_path(repo)
-    initial_config = None  # type: Optional[bytes]
+    initial_config: Optional[bytes] = None
     if config_path.is_file():
         initial_config = config_path.read_bytes()
     return initial_config
@@ -914,8 +918,8 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 class Main(base.BaseMain):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__(args)
-        self._repo = None  # type: Optional[git.Repo]
-        self._crates = None  # type: Optional[List[Crate]]
+        self._repo: Optional[git.Repo] = None
+        self._crates: Optional[List[Crate]] = None
 
     def _get_start(self) -> str:
         start = self.args.start

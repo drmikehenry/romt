@@ -59,8 +59,8 @@ def require_targets(
 class DistMain(base.BaseMain):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__(args)
-        self._specs = None  # type: Optional[List[str]]
-        self._targets = None  # type: Optional[List[str]]
+        self._specs: Optional[List[str]] = None
+        self._targets: Optional[List[str]] = None
 
     @property
     def specs(self) -> List[str]:

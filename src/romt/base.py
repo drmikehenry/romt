@@ -26,7 +26,7 @@ def add_downloader_arguments(parser: argparse.ArgumentParser) -> None:
 class BaseMain:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
-        self._downloader = None  # type: Optional[romt.download.Downloader]
+        self._downloader: Optional[romt.download.Downloader] = None
 
     @property
     def downloader(self) -> romt.download.Downloader:

@@ -115,8 +115,8 @@ def path_append_sig_suffix(path: Path) -> Path:
 
 class Verifier:
     def __init__(self) -> None:
-        self._gpg_home = None  # type: Optional[tempfile.TemporaryDirectory]
-        self._gpg = None  # type: Optional[gnupg.GPG]
+        self._gpg_home: Optional[tempfile.TemporaryDirectory] = None
+        self._gpg: Optional[gnupg.GPG] = None
 
     def _get_gpg(self) -> Optional[gnupg.GPG]:
         if self._gpg_home is None:

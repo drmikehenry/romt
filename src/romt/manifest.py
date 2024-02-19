@@ -17,8 +17,6 @@ from typing import (
 
 import toml
 
-from romt import error
-
 
 def target_matches_any(target: str, expected_targets: Iterable[str]) -> bool:
     if target == "*":

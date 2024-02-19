@@ -273,7 +273,7 @@ class Main(dist.DistMain):
         return dist.require_specs(specs)
 
     def expand_wild_spec(self, spec: str) -> List[str]:
-        specs = []  # type: List[str]
+        specs: List[str] = []
         date, channel = parse_spec(spec)
         if "*" in (date, channel) or date == "latest":
             if channel == "*":
@@ -438,7 +438,7 @@ class Main(dist.DistMain):
         specs: List[str],
         base_targets: List[str],
     ) -> None:
-        processed_paths = set()  # type: Set[Path]
+        processed_paths: Set[Path] = set()
         for spec in specs:
             common.iprint(
                 "{}: {}".format("Download" if download else "Verify", spec)
@@ -539,7 +539,7 @@ class Main(dist.DistMain):
         archive_path = self.get_archive_path()
         common.iprint(f"Packing archive: {archive_path}")
         with common.tar_context(archive_path, "w") as tar_f:
-            processed_paths = set()  # type: Set[Path]
+            processed_paths: Set[Path] = set()
 
             def pack_path(rel_path: str) -> None:
                 dest_path = self.dest_path_from_rel_path(rel_path)
