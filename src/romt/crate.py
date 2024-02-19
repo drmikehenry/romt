@@ -13,6 +13,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 import urllib.parse
 
 import git
+import git.objects
 import git.remote
 import toml
 import trio
@@ -211,10 +212,10 @@ def crate_rel_path_from_name_version(
 
 
 def blobs_in_commit_range(
-    start_commit: git.Commit, end_commit: git.Commit
+    start_commit: Optional[git.objects.Commit], end_commit: git.objects.Commit
 ) -> Generator[Tuple[str, bytes, bytes], None, None]:
     """Generate (blob_path, start_blob, end_blob)."""
-    if start_commit:
+    if start_commit is not None:
         for diff in end_commit.diff(start_commit):
             # diff.a_xxx goes with end_commit.
             if diff.a_blob:
@@ -275,7 +276,7 @@ def blob_crates(blob: bytes) -> Generator[Crate, None, None]:
 
 
 def crates_in_commit_range(
-    start_commit: git.Commit, end_commit: git.Commit
+    start_commit: Optional[git.objects.Commit], end_commit: git.objects.Commit
 ) -> Generator[Crate, None, None]:
     """Generate newly specified crates."""
 
@@ -305,8 +306,11 @@ def crates_in_commit_range(
 def crates_in_range(
     repo: git.Repo, start: str, end: str
 ) -> Generator[Crate, None, None]:
-    start_commit = repo.commit(start) if start else None
-    end_commit = repo.commit(end)
+    try:
+        start_commit = repo.commit(start) if start else None
+        end_commit = repo.commit(end)
+    except git.exc.BadName as e:
+        raise error.GitError(f"bad commit requested: {e}")
     yield from crates_in_commit_range(start_commit, end_commit)
 
 

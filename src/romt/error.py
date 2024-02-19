@@ -78,3 +78,9 @@ class UnexpectedArchiveMemberError(Error):
     def __init__(self, name: str) -> None:
         super().__init__(f"unexpected archive member {name}")
         self.name = name
+
+
+class GitError(Error):
+    def __init__(self, message: str) -> None:
+        super().__init__(f"Git error: {message}")
+        self.message = message
