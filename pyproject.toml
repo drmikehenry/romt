@@ -1,6 +1,12 @@
+##############################################################################
+# Source formatting
+
 [tool.black]
 line-length = 79
 target-version = ["py35"]
+
+##############################################################################
+# Style checking
 
 [tool.ruff]
 ignore = [
@@ -25,3 +31,21 @@ inline-quotes = "double"
 [tool.ruff.mccabe]
 max-complexity = 15
 
+##############################################################################
+# Type checking
+
+[tool.mypy]
+warn_unused_configs = true
+ignore_missing_imports = true
+
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+
+##############################################################################
+# Coverage support
+
+[tool.coverage.run]
+branch = true
