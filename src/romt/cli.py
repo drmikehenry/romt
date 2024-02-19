@@ -9,8 +9,7 @@ import romt.crate
 import romt.rustup
 import romt.serve
 import romt.toolchain
-
-__version__ = "0.5.0"
+import importlib.metadata
 
 project_name = "romt"
 
@@ -70,8 +69,10 @@ def readme() -> None:
 
 
 def add_common_arguments(parser: argparse.ArgumentParser) -> None:
+    romt_version = importlib.metadata.version("romt")
+
     parser.add_argument(
-        "--version", action="version", version="%(prog)s " + __version__
+        "--version", action="version", version="%(prog)s " + romt_version
     )
 
     parser.add_argument(

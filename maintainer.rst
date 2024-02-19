@@ -9,7 +9,7 @@ Making a release
 
 - Activate the ``romt`` virtual environment.
 
-- Verify proper ``__version__`` in ``src/romt/cli.py``.
+- Verify proper ``version="x.y.z"`` in ``setup.py``.
 
 - Verify changes are recorded in ``CHANGES.rst``.
 

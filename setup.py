@@ -12,12 +12,6 @@ language tools and crates for use in an offline context.
 keywords = "Rust mirror toolchain crates"
 
 
-__version__ = "0.0.0"
-for line in open(f"src/{NAME}/cli.py", encoding="utf-8"):
-    if line.startswith("__version__"):
-        __version__ = line.split('"')[1]
-        break
-
 with open("README.rst", encoding="utf-8") as f:
     long_description = f.read()
 
@@ -29,7 +23,7 @@ with open("dev-requirements.txt", encoding="utf-8") as f:
 
 setuptools.setup(
     name=NAME,
-    version=__version__,
+    version="0.5.0",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     python_requires=">=3.8",

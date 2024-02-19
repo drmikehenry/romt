@@ -7,8 +7,8 @@ die()
 }
 
 version=$(perl -ne \
-    'if (/__version__\s*=\s*"((\d|\.)+)"/) { print "$1\n"; }' \
-    src/romt/cli.py \
+    'if (/^\s*version\s*=\s*"((\d|\.)+)"/) { print "$1\n"; }' \
+    setup.py \
 )
 
 echo "Release version: $version"
