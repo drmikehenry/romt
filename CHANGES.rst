@@ -2,6 +2,23 @@
 History
 *******
 
+Version 0.5.0
+=============
+
+- Bump minimum required interpreter version from Python 3.6 to Python 3.8.
+
+- Add ``toolchain download --cross`` feature to allow downloading only the
+  ``rust-std`` (Rust standard library) component of a target.  This is useful
+  for allowing cross-compilation to a given target without downloading the full
+  native toolchain for that target.
+
+- Update list of supported ``rustup`` targets.
+
+- Note the use of the ``.toml`` suffix for Cargo configuration files.
+
+- Note how to configure Cargo to use the Git command-line client for fetching
+  the ``crates.io-index`` repository for greatly improved performance.
+
 Version 0.4.0
 =============
 

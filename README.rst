@@ -668,6 +668,11 @@ Wildcarding (via ``*`` or ``latest``) is not permitted, though the ``{date}``
 may be omitted from the SPEC value, and TARGET may be the literal ``all`` to
 download all known targets for the SPEC.
 
+By default, all toolchain components will be downloaded; but when the switch
+``--cross`` is supplied, only the Rust standard library component ``rust-std``
+will be downloaded.  This is to support cross-compilation to a given target
+without the need to download all toolchain components for that target.
+
 Files are downloaded from ``https://static.rust-lang.org/dist`` by default; this
 may be changed via the option ``--url <URL>``.
 
@@ -770,6 +775,10 @@ toolchain pack`` command.
 The archive file may be moved to another machine and unpacked using the ``romt
 toolchain unpack`` command.
 
+Romt will detect when a toolchain has been downloaded via the ``--cross``
+switch, in which case only the ``rust-std`` component (along with whatever other
+toolchain components are present, if any) will be processed.
+
 For both ``pack`` and ``unpack``, the ``ARCHIVE`` file is named
 ``toolchain.tar.gz`` by default; this may be changed via the option ``--archive
 ARCHIVE``.
@@ -847,10 +856,42 @@ For example, the most recent on-disk ``stable`` release can be shown via:
 
   romt toolchain list --select 'stable-latest'
 
-With resulting output::
+With example output::
 
-  stable-2020-04-23(1.43.0)    targets[1/82]    packages[12/311]
-    x86_64-unknown-linux-gnu
+  stable-2024-02-08(1.76.0)    targets[10/94]   packages[34/425]
+    mips-unknown-linux-gnu                        minimal
+    mips64-unknown-linux-gnuabi64                 minimal
+    mips64el-unknown-linux-gnuabi64               minimal
+    mipsel-unknown-linux-gnu                      minimal
+    mipsisa32r6-unknown-linux-gnu                 minimal
+    mipsisa32r6el-unknown-linux-gnu               minimal
+    mipsisa64r6-unknown-linux-gnuabi64            minimal
+    mipsisa64r6el-unknown-linux-gnuabi64          minimal
+    x86_64-unknown-linux-gnu                      native-target
+    x86_64-unknown-linux-musl                     cross-target
+
+Next to each target name is that target's "type", one of:
+
+- ``native-target`` (a full toolchain)
+- ``cross-target`` (a toolchain for cross-compilation)
+- ``minimal`` (minimal toolchain components with no compilation support)
+
+A ``native-target`` contains a full toolchain capable of running on the target
+natively (and compiling Rust code to that target as well).
+
+A ``cross-target`` does not contain a compiler that runs on the target; but it
+does contain the Rust standard library component ``rust-std`` for the target,
+enabling cross-compilation to the target (using a ``native-target`` toolchain on
+another host).
+
+A ``minimal`` target lacks ``rust-std`` but has some minimal components
+available.  Typically a minimal target shows up by coincidence because it shares
+one or more components with another target.  For example, at the time of this
+writing the minimal target ``mips-unknown-linux-gnu`` has no components of its
+own in toolchain 1.76.0, but it shares the component ``rust-docs`` with the more
+common target ``x86_64-unknown-linux-gnu``; therefore, downloading the full
+toolchain for ``x86_64-unknown-linux-gnu`` will cause ``mips-unknown-linux-gnu``
+to show up as a minimal toolchain.
 
 To suppress information about targets, use ``--quiet``:
 
@@ -858,9 +899,9 @@ To suppress information about targets, use ``--quiet``:
 
   romt toolchain list --select 'stable-latest' --quiet
 
-With resulting output::
+With example output::
 
-  stable-2020-04-23(1.43.0)    targets[1/82]    packages[12/311]
+  stable-2024-02-08(1.76.0)
 
 With wildcards, Romt can provide a listing of all available toolchains for a
 given channel:
@@ -869,14 +910,34 @@ given channel:
 
   romt toolchain list -s 'nightly-*'
 
-With example resulting output::
+With example output::
 
-  nightly-2020-05-06(1.45.0)   targets[1/84]    packages[12/316]
-    x86_64-unknown-linux-gnu
-  nightly-2020-05-04(1.45.0)   targets[1/84]    packages[12/316]
-    x86_64-unknown-linux-gnu
-  nightly-2020-04-30(1.45.0)   targets[1/84]    packages[12/313]
-    x86_64-unknown-linux-gnu
+  nightly-2024-02-14(1.78.0)   targets[9/94]    packages[54/486]
+    mips-unknown-linux-gnu                        minimal
+    mips64-unknown-linux-gnuabi64                 minimal
+    mips64el-unknown-linux-gnuabi64               minimal
+    mipsel-unknown-linux-gnu                      minimal
+    mipsisa32r6-unknown-linux-gnu                 minimal
+    mipsisa32r6el-unknown-linux-gnu               minimal
+    mipsisa64r6-unknown-linux-gnuabi64            minimal
+    mipsisa64r6el-unknown-linux-gnuabi64          minimal
+    x86_64-unknown-linux-gnu                      native-target
+  nightly-2023-10-31(1.75.0)   targets[9/95]    packages[54/488]
+    mips-unknown-linux-gnu                        minimal
+    mips64-unknown-linux-gnuabi64                 minimal
+    mips64el-unknown-linux-gnuabi64               minimal
+    mipsel-unknown-linux-gnu                      minimal
+    mipsisa32r6-unknown-linux-gnu                 minimal
+    mipsisa32r6el-unknown-linux-gnu               minimal
+    mipsisa64r6-unknown-linux-gnuabi64            minimal
+    mipsisa64r6el-unknown-linux-gnuabi64          minimal
+    x86_64-unknown-linux-gnu                      native-target
+  nightly-2023-07-04(1.72.0)   targets[5/96]    packages[53/529]
+    mipsisa32r6-unknown-linux-gnu                 minimal
+    mipsisa32r6el-unknown-linux-gnu               minimal
+    mipsisa64r6-unknown-linux-gnuabi64            minimal
+    mipsisa64r6el-unknown-linux-gnuabi64          minimal
+    x86_64-unknown-linux-gnu                      native-target
 
 After toolchain importation, it may be useful to list toolchains for each
 channel for reference:
@@ -1131,7 +1192,7 @@ For example, the most recent on-disk version can be shown via:
 
   romt rustup list --select 'latest'
 
-With resulting output::
+With example output::
 
   List: 1.21.1
   1.21.1   targets[1]
@@ -1143,7 +1204,7 @@ To suppress information about targets, use ``--quiet``:
 
   romt rustup list --select 'latest' --quiet
 
-With resulting output::
+With example output::
 
   1.21.1
 
@@ -1153,7 +1214,7 @@ With wildcards, Romt can provide a listing of all available rustup versions:
 
   romt rustup list -s '*'
 
-With example resulting output::
+With example output::
 
   List: 1.21.1
   1.21.1   targets[1]
@@ -1577,7 +1638,7 @@ INDEX and then ``list``:
 
   romt crate pull list
 
-Sample output might be::
+With example output::
 
   pull...
   list...
@@ -1857,7 +1918,7 @@ Examples:
 
     aws s3 ls --no-sign-request s3://static-rust-lang-org/dist/2020-04-30/chan
 
-  with output::
+  with example output::
 
     2020-04-29 20:23:44         10 channel-rust-nightly-date.txt
     2020-04-29 20:23:44        833 channel-rust-nightly-date.txt.asc
@@ -1871,7 +1932,7 @@ Examples:
 
     aws s3 ls --no-sign-request s3://static-rust-lang-org/rustup/archive/
 
-  with output::
+  with example output::
 
                            PRE 0.2.0/
                            PRE 0.3.0/
