@@ -10,3 +10,4 @@ flake8-import-order >= 0.18.2
 pypiwin32 >= 223;platform_system == "Windows"
 types-toml==0.10.8
 types-setuptools==69.0.0
+twine==5.0.0
