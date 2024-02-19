@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import argparse
 from pathlib import Path
@@ -112,7 +111,7 @@ def validate_spec(spec: str) -> str:
     if spec in ("*", "latest", "stable") or common.is_version(spec):
         return spec
 
-    raise error.UsageError("invalid SPEC {}".format(repr(spec)))
+    raise error.UsageError(f"invalid SPEC {repr(spec)}")
 
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
@@ -190,7 +189,7 @@ class Main(dist.DistMain):
             # correct version is used.
             self.downloader.download_cached(url, path, cached=False)
         elif path.is_file():
-            common.vprint("[read] {}".format(path))
+            common.vprint(f"[read] {path}")
         else:
             raise error.MissingFileError(str(path))
         return toml.load(path)["version"]
@@ -204,7 +203,7 @@ class Main(dist.DistMain):
         return self.dest_path_from_rel_path(self.artifact_root_rel_path)
 
     def artifact_version_rel_path(self, version: str) -> str:
-        return "{}/{}".format(self.artifact_root_rel_path, version)
+        return f"{self.artifact_root_rel_path}/{version}"
 
     def artifact_version_path(self, version: str) -> Path:
         return self.dest_path_from_rel_path(
@@ -234,7 +233,7 @@ class Main(dist.DistMain):
         for spec in specs:
             validate_spec(spec)
             if spec == "*" or spec == "latest":
-                raise error.UsageError("invalid wild SPEC: {}".format(spec))
+                raise error.UsageError(f"invalid wild SPEC: {spec}")
         return dist.require_specs(specs)
 
     def expand_wild_spec(self, spec: str) -> List[str]:
@@ -253,7 +252,7 @@ class Main(dist.DistMain):
 
         if not specs:
             raise error.UsageError(
-                "no matches for wild SPEC {}".format(repr(spec))
+                f"no matches for wild SPEC {repr(spec)}"
             )
 
         return specs
@@ -282,7 +281,7 @@ class Main(dist.DistMain):
             else:
                 if target not in known_targets:
                     common.eprint(
-                        "warning: unknown target {}".format(repr(target))
+                        f"warning: unknown target {repr(target)}"
                     )
                 targets.add(target)
         return sorted(targets)
@@ -295,12 +294,12 @@ class Main(dist.DistMain):
                 "{}: {}".format("Download" if download else "Verify", spec)
             )
             version = self.version_from_spec(spec, download=download)
-            common.iprint("  version: {}".format(version))
+            common.iprint(f"  version: {version}")
 
             targets = self.adjust_targets(version, base_targets)
-            common.iprint("  targets: {}".format(len(targets)))
+            common.iprint(f"  targets: {len(targets)}")
             for t in targets:
-                common.vvprint("  target: {}".format(t))
+                common.vvprint(f"  target: {t}")
 
             for target in targets:
                 rel_path = self.rustup_init_rel_path(version, target)
@@ -331,17 +330,17 @@ class Main(dist.DistMain):
         max_verbosity = common.get_max_verbosity()
         show_details = max_verbosity >= common.VERBOSITY_INFO
         for spec in self.adjust_wild_specs(self.specs):
-            common.iprint("List: {}".format(spec))
+            common.iprint(f"List: {spec}")
             version = self.version_from_spec(spec, download=False)
             if show_details:
                 targets = self.downloaded_targets(version)
 
-                target_out = "targets[{}]".format(len(targets))
+                target_out = f"targets[{len(targets)}]"
                 # Example output:
                 #   1.41.0   targets[84]
-                common.iprint("{:8} {}".format(version, target_out))
+                common.iprint(f"{version:8} {target_out}")
                 for target in targets:
-                    common.iprint("  {}".format(target))
+                    common.iprint(f"  {target}")
             else:
                 common.eprint(version)
 
@@ -353,13 +352,13 @@ class Main(dist.DistMain):
     def cmd_pack(self) -> None:
         base_targets = dist.require_targets(self.targets, default="*")
         archive_path = self.get_archive_path()
-        common.iprint("Packing archive: {}".format(archive_path))
+        common.iprint(f"Packing archive: {archive_path}")
         with common.tar_context(archive_path, "w") as tar_f:
 
             def pack_path(rel_path: str) -> None:
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 packed_name = "rustup/" + rel_path
-                common.vprint("[pack] {}".format(rel_path))
+                common.vprint(f"[pack] {rel_path}")
                 try:
                     tar_f.add(str(dest_path), packed_name)
                 except FileNotFoundError:
@@ -370,14 +369,14 @@ class Main(dist.DistMain):
                 pack_path(integrity.append_hash_suffix(rel_path))
 
             for spec in self.adjust_wild_specs(self.specs):
-                common.iprint("Pack: {}".format(spec))
+                common.iprint(f"Pack: {spec}")
                 version = self.version_from_spec(spec, download=False)
-                common.iprint("  version: {}".format(version))
+                common.iprint(f"  version: {version}")
 
                 targets = self.adjust_targets(version, base_targets)
-                common.iprint("  targets: {}".format(len(targets)))
+                common.iprint(f"  targets: {len(targets)}")
                 for t in targets:
-                    common.vvprint("  target: {}".format(t))
+                    common.vvprint(f"  target: {t}")
 
                 for target in targets:
                     rel_path = self.rustup_init_rel_path(version, target)
@@ -392,7 +391,7 @@ class Main(dist.DistMain):
         for p in rel_paths:
             parts = p.split("/")
             if len(parts) < 4:
-                common.eprint("warning: unexpected path {}".format(p))
+                common.eprint(f"warning: unexpected path {p}")
             else:
                 version = parts[1]
                 target = parts[2]
@@ -403,9 +402,9 @@ class Main(dist.DistMain):
 
     def cmd_unpack(self) -> None:
         archive_path = self.get_archive_path()
-        common.iprint("Unpacking archive: {}".format(archive_path))
+        common.iprint(f"Unpacking archive: {archive_path}")
         rustup_prefix = "rustup/"
-        prefix = "{}{}/".format(rustup_prefix, self.artifact_root_rel_path)
+        prefix = f"{rustup_prefix}{self.artifact_root_rel_path}/"
         extracted = set()
         with common.tar_context(archive_path, "r") as tar_f:
             for tar_info in tar_f:
@@ -417,19 +416,19 @@ class Main(dist.DistMain):
                 rel_path = tar_info.name[len(rustup_prefix) :]
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 tar_info.name = str(dest_path)
-                common.vprint("[unpack] {}".format(rel_path))
+                common.vprint(f"[unpack] {rel_path}")
                 tar_f.extract(tar_info)
                 extracted.add(rel_path)
 
         specs, targets = self._detect_version_targets(extracted)
 
-        common.iprint("Unpacked specs: {}".format(len(specs)))
+        common.iprint(f"Unpacked specs: {len(specs)}")
         for spec in specs:
-            common.iprint("  {}".format(spec))
+            common.iprint(f"  {spec}")
 
-        common.iprint("Unpacked targets: {}".format(len(targets)))
+        common.iprint(f"Unpacked targets: {len(targets)}")
         for target in targets:
-            common.iprint("  {}".format(target))
+            common.iprint(f"  {target}")
 
         self.specs = specs
         self.targets = targets
@@ -451,12 +450,12 @@ class Main(dist.DistMain):
         else:
             write = True
         if write:
-            common.iprint("[write] {} (version={})".format(path, version))
+            common.iprint(f"[write] {path} (version={version})")
             self._write_release_stable(version)
 
     def cmd_fixup(self) -> None:
         for spec in self.adjust_wild_specs(self.specs):
-            common.iprint("Fixup: {}".format(spec))
+            common.iprint(f"Fixup: {spec}")
             version = self.version_from_spec(spec, download=False)
             version_path = self.artifact_version_path(version)
             # Artifacts are arranged as: <version_path>/<target>/<artifact>
@@ -465,7 +464,7 @@ class Main(dist.DistMain):
             artifacts = list(version_path.glob("*/*"))
             if not artifacts:
                 raise error.UsageError(
-                    "version {} not present".format(version)
+                    f"version {version} not present"
                 )
             self._fixup_version(version)
 
@@ -473,7 +472,7 @@ class Main(dist.DistMain):
         stable_version = self.get_release_stable_version(download=False)
 
         archive_version_path = self.dest_path_from_rel_path(
-            "archive/{}".format(stable_version)
+            f"archive/{stable_version}"
         )
         if not archive_version_path.is_dir():
             raise error.MissingDirectoryError(str(archive_version_path))
@@ -483,7 +482,7 @@ class Main(dist.DistMain):
             shutil.rmtree(str(dist_path))
 
         common.iprint(
-            "[copytree] {} -> {}".format(archive_version_path, dist_path)
+            f"[copytree] {archive_version_path} -> {dist_path}"
         )
         shutil.copytree(str(archive_version_path), str(dist_path))
 

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import argparse
 from pathlib import Path
@@ -108,27 +107,27 @@ def parse_spec(spec: str) -> Tuple[str, str]:
         """
 
     m = re.match(
-        r"{} (?: - {})? $".format(channel_rex, date_rex), spec, re.VERBOSE
+        fr"{channel_rex} (?: - {date_rex})? $", spec, re.VERBOSE
     )
     if m:
         channel = m.group("channel")
         date = m.group("date") or ""
         return date, channel
 
-    m = re.match(r"{} $".format(date_rex), spec, re.VERBOSE)
+    m = re.match(fr"{date_rex} $", spec, re.VERBOSE)
     if m:
         date = m.group("date")
         return date, "*"
 
-    raise error.UsageError("invalid SPEC {}".format(repr(spec)))
+    raise error.UsageError(f"invalid SPEC {repr(spec)}")
 
 
 def channel_rel_path(date: str, channel: str) -> str:
-    channel_name = "channel-rust-{}.toml".format(channel)
+    channel_name = f"channel-rust-{channel}.toml"
     if date:
-        rel_path = "{}/{}".format(date, channel_name)
+        rel_path = f"{date}/{channel_name}"
     else:
-        rel_path = "{}".format(channel_name)
+        rel_path = f"{channel_name}"
     return rel_path
 
 
@@ -270,7 +269,7 @@ class Main(dist.DistMain):
         for spec in specs:
             date, channel = parse_spec(spec)
             if "*" in (date, channel) or date == "latest":
-                raise error.UsageError("invalid wild SPEC: {}".format(spec))
+                raise error.UsageError(f"invalid wild SPEC: {spec}")
         return dist.require_specs(specs)
 
     def expand_wild_spec(self, spec: str) -> List[str]:
@@ -280,7 +279,7 @@ class Main(dist.DistMain):
             if channel == "*":
                 channel_patterns = set("nightly beta stable".split())
             else:
-                channel_patterns = set([channel])
+                channel_patterns = {channel}
             if date in ("*", "latest"):
                 dates = common.reversed_date_dir_names(self.dest_path)
             else:
@@ -290,7 +289,7 @@ class Main(dist.DistMain):
                     self.channels_in_dest_date(d)
                 )
                 specs.extend(
-                    "{}-{}".format(channel, d) for channel in channels
+                    f"{channel}-{d}" for channel in channels
                 )
                 if date == "latest" and specs:
                     break
@@ -299,7 +298,7 @@ class Main(dist.DistMain):
 
         if not specs:
             raise error.UsageError(
-                "no matches for wild SPEC {}".format(repr(spec))
+                f"no matches for wild SPEC {repr(spec)}"
             )
 
         return specs
@@ -339,7 +338,7 @@ class Main(dist.DistMain):
                 targets.update(self.downloaded_target_types(manifest))
             elif target not in all_targets:
                 raise error.UsageError(
-                    "target {} not found in manifest".format(repr(target))
+                    f"target {repr(target)} not found in manifest"
                 )
             else:
                 targets.add(target)
@@ -347,9 +346,9 @@ class Main(dist.DistMain):
 
     def cmd_fetch_manifest(self) -> None:
         for spec in self.adjust_download_specs(self.specs):
-            common.iprint("Fetch manifest: {}".format(spec))
+            common.iprint(f"Fetch manifest: {spec}")
             manifest = self.select_manifest(spec, download=True)
-            common.iprint("  ident: {}".format(manifest.ident))
+            common.iprint(f"  ident: {manifest.ident}")
 
     async def _download_verify_one(
         self,
@@ -393,7 +392,7 @@ class Main(dist.DistMain):
                 rel_path = package.rel_path
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 if self._path_duplicated(dest_path, processed_paths):
-                    common.vprint("[duplicate] {}".format(dest_path))
+                    common.vprint(f"[duplicate] {dest_path}")
                     continue
                 dest_url = self.url_from_rel_path(rel_path)
                 await limiter.acquire_on_behalf_of(dest_path)
@@ -423,11 +422,11 @@ class Main(dist.DistMain):
             )
             if target_types[target] == "cross-target":
                 # Reduce `packages` to only those present.
-                target_packages = set(
+                target_packages = {
                     p
                     for p in target_packages
                     if self._rel_path_is_downloaded(p.rel_path)
-                )
+                }
             packages.update(target_packages)
         return packages
 
@@ -447,7 +446,7 @@ class Main(dist.DistMain):
             manifest = self.select_manifest(
                 spec, download=download, canonical=True
             )
-            common.iprint("  ident: {}".format(manifest.ident))
+            common.iprint(f"  ident: {manifest.ident}")
             targets = self.adjust_targets(manifest, base_targets)
             if download:
                 packages = set(
@@ -467,7 +466,7 @@ class Main(dist.DistMain):
                 )
             )
             for t in targets:
-                common.vvprint("  target: {}".format(t))
+                common.vvprint(f"  target: {t}")
 
             self.downloader.run_job(
                 self._download_verify_packages,
@@ -497,7 +496,7 @@ class Main(dist.DistMain):
         max_verbosity = common.get_max_verbosity()
         show_details = max_verbosity >= common.VERBOSITY_INFO
         for spec in self.adjust_wild_specs(self.specs):
-            common.vprint("List: {}".format(spec))
+            common.vprint(f"List: {spec}")
             manifest = self.select_manifest(spec, download=False)
             if show_details:
                 available_packages = list(manifest.gen_available_packages())
@@ -523,32 +522,32 @@ class Main(dist.DistMain):
                     )
                 )
                 for target, target_type in target_types.items():
-                    common.iprint("  {:45} {}".format(target, target_type))
+                    common.iprint(f"  {target:45} {target_type}")
             else:
                 common.eprint(manifest.ident)
 
     def cmd_all_targets(self) -> None:
         for spec in self.adjust_wild_specs(self.specs):
-            common.iprint("All targets: {}".format(spec))
+            common.iprint(f"All targets: {spec}")
             manifest = self.select_manifest(spec, download=False)
-            common.iprint("  ident: {}".format(manifest.ident))
+            common.iprint(f"  ident: {manifest.ident}")
             for target in manifest.all_targets():
                 common.eprint(target)
 
     def cmd_pack(self) -> None:
         base_targets = dist.require_targets(self.targets, default="*")
         archive_path = self.get_archive_path()
-        common.iprint("Packing archive: {}".format(archive_path))
+        common.iprint(f"Packing archive: {archive_path}")
         with common.tar_context(archive_path, "w") as tar_f:
             processed_paths = set()  # type: Set[Path]
 
             def pack_path(rel_path: str) -> None:
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 if self._path_duplicated(dest_path, processed_paths):
-                    common.vprint("[duplicate] {}".format(rel_path))
+                    common.vprint(f"[duplicate] {rel_path}")
                     return
                 packed_name = "dist/" + rel_path
-                common.vprint("[pack] {}".format(rel_path))
+                common.vprint(f"[pack] {rel_path}")
                 try:
                     tar_f.add(str(dest_path), packed_name)
                 except FileNotFoundError:
@@ -561,11 +560,11 @@ class Main(dist.DistMain):
                     pack_path(signature.append_sig_suffix(rel_path))
 
             for spec in self.adjust_wild_specs(self.specs):
-                common.iprint("Pack: {}".format(spec))
+                common.iprint(f"Pack: {spec}")
                 manifest = self.select_manifest(
                     spec, download=False, canonical=True
                 )
-                common.iprint("  ident: {}".format(manifest.ident))
+                common.iprint(f"  ident: {manifest.ident}")
 
                 targets = self.adjust_targets(manifest, base_targets)
                 packages = sorted(
@@ -578,7 +577,7 @@ class Main(dist.DistMain):
                     )
                 )
                 for t in targets:
-                    common.vvprint("  target: {}".format(t))
+                    common.vvprint(f"  target: {t}")
 
                 # Pack channel file.
                 pack_rel_path(
@@ -605,7 +604,7 @@ class Main(dist.DistMain):
             if m:
                 date = m.group("date")
                 channel = m.group("channel")
-                specs.append("{}-{}".format(channel, date))
+                specs.append(f"{channel}-{date}")
         return specs
 
     def _detect_targets(
@@ -622,7 +621,7 @@ class Main(dist.DistMain):
 
     def cmd_unpack(self) -> None:
         archive_path = self.get_archive_path()
-        common.iprint("Unpacking archive: {}".format(archive_path))
+        common.iprint(f"Unpacking archive: {archive_path}")
         dist_prefix = "dist/"
         extracted = set()
         with common.tar_context(archive_path, "r") as tar_f:
@@ -635,20 +634,20 @@ class Main(dist.DistMain):
                 rel_path = tar_info.name[len(dist_prefix) :]
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 tar_info.name = str(dest_path)
-                common.vprint("[unpack] {}".format(rel_path))
+                common.vprint(f"[unpack] {rel_path}")
                 tar_f.extract(tar_info)
                 extracted.add(rel_path)
 
         specs = self._detect_specs(extracted)
         targets = self._detect_targets(specs, extracted)
 
-        common.iprint("Unpacked specs: {}".format(len(specs)))
+        common.iprint(f"Unpacked specs: {len(specs)}")
         for spec in specs:
-            common.iprint("  {}".format(spec))
+            common.iprint(f"  {spec}")
 
-        common.iprint("Unpacked targets: {}".format(len(targets)))
+        common.iprint(f"Unpacked targets: {len(targets)}")
         for target in targets:
-            common.iprint("  {}".format(target))
+            common.iprint(f"  {target}")
 
         # If the list of targets was given explicitly, it will be the same
         # for all specs; but if ``--target all`` was used, the list can vary
@@ -675,7 +674,7 @@ class Main(dist.DistMain):
     ) -> None:
         src_path = self.manifest_path(manifest.date, manifest.channel)
         dst_path = self.manifest_path(date, channel)
-        common.iprint("[publish] {}".format(dst_path))
+        common.iprint(f"[publish] {dst_path}")
         shutil.copyfile(str(src_path), str(dst_path))
         src_hash_path = integrity.path_append_hash_suffix(src_path)
         dst_hash_path = integrity.path_append_hash_suffix(dst_path)
@@ -708,11 +707,11 @@ class Main(dist.DistMain):
 
     def cmd_fixup(self) -> None:
         for spec in self.adjust_wild_specs(self.specs):
-            common.iprint("Fixup: {}".format(spec))
+            common.iprint(f"Fixup: {spec}")
             manifest = self.select_manifest(
                 spec, download=False, canonical=True
             )
-            common.vprint("  ident: {}".format(manifest.ident))
+            common.vprint(f"  ident: {manifest.ident}")
             self._write_manifest_variations(manifest)
 
     def _run(self) -> None:

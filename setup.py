@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# coding=utf-8
 
 import setuptools
 
@@ -14,7 +13,7 @@ keywords = "Rust mirror toolchain crates"
 
 
 __version__ = None
-for line in open("src/{}/cli.py".format(NAME), encoding="utf-8"):
+for line in open(f"src/{NAME}/cli.py", encoding="utf-8"):
     if line.startswith("__version__"):
         __version__ = line.split('"')[1]
         break
@@ -36,7 +35,7 @@ setuptools.setup(
     python_requires=">=3.8",
     install_requires=requirements,
     extras_require={"dev": dev_requirements},
-    entry_points={"console_scripts": ["{}={}.cli:main".format(NAME, NAME)]},
+    entry_points={"console_scripts": [f"{NAME}={NAME}.cli:main"]},
     description=description,
     long_description=long_description,
     keywords=keywords,

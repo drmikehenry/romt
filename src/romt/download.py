@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import functools
 from pathlib import Path
@@ -66,9 +65,9 @@ class Downloader:
         self, dest_url: str, dest_path: Path, *, cached: bool = True
     ) -> None:
         if cached and dest_path.is_file():
-            common.vprint("[cached file] {}".format(dest_path))
+            common.vprint(f"[cached file] {dest_path}")
         else:
-            common.vprint("[downloading] {}".format(dest_path))
+            common.vprint(f"[downloading] {dest_path}")
             await self.adownload(dest_url, dest_path)
 
     def download_cached(
@@ -81,7 +80,7 @@ class Downloader:
             self.sig_verifier.verify(path, sig_path)
         except (error.MissingFileError, error.IntegrityError):
             if self._warn_signature:
-                common.eprint("Warning: Signature failure for {}".format(path))
+                common.eprint(f"Warning: Signature failure for {path}")
             else:
                 raise
 
@@ -91,7 +90,7 @@ class Downloader:
             MissingFileError - path doesn't exist
             IntegrityError - path exists with bad hash
         """
-        common.vprint("[verify] {}".format(path))
+        common.vprint(f"[verify] {path}")
         integrity.verify_hash(path, hash)
 
     def verify(self, path: Path, *, with_sig: bool = False) -> None:
@@ -101,7 +100,7 @@ class Downloader:
             IntegrityError - paths exists with bad hash
         """
         hash_path = integrity.path_append_hash_suffix(path)
-        common.vprint("[verify] {}".format(path))
+        common.vprint(f"[verify] {path}")
         integrity.verify(path, hash_path)
         if with_sig:
             sig_path = signature.path_append_sig_suffix(path)
@@ -118,15 +117,15 @@ class Downloader:
     ) -> None:
         if cached:
             if assume_ok and dest_path.is_file():
-                common.vvprint("[assuming OK] {}".format(dest_path))
+                common.vvprint(f"[assuming OK] {dest_path}")
                 return
             try:
                 integrity.verify_hash(dest_path, hash)
-                common.vprint("[cached file] {}".format(dest_path))
+                common.vprint(f"[cached file] {dest_path}")
                 return
             except (error.MissingFileError, error.IntegrityError):
                 pass
-        common.vprint("[downloading] {}".format(dest_path))
+        common.vprint(f"[downloading] {dest_path}")
         await self.adownload(dest_url, dest_path)
         integrity.verify_hash(dest_path, hash)
 
@@ -166,17 +165,17 @@ class Downloader:
                 and hash_path.is_file()
                 and (not with_sig or sig_path.is_file())
             ):
-                common.vvprint("[assuming OK] {}".format(dest_path))
+                common.vvprint(f"[assuming OK] {dest_path}")
                 return
             try:
                 integrity.verify(dest_path, hash_path)
                 if with_sig:
                     self._sig_verify(dest_path, sig_path)
-                common.vprint("[cached file] {}".format(dest_path))
+                common.vprint(f"[cached file] {dest_path}")
                 return
             except (error.MissingFileError, error.IntegrityError):
                 pass
-        common.vprint("[downloading] {}".format(dest_path))
+        common.vprint(f"[downloading] {dest_path}")
         # Download the (small) hash and signature files first.
         hash_url = integrity.append_hash_suffix(dest_url)
         await self.adownload(hash_url, hash_path)

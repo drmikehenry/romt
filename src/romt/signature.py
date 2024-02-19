@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 from pathlib import Path
 import tempfile
@@ -128,7 +127,7 @@ class Verifier:
                     result = gpg.import_keys(key)
                     if not result:
                         raise ValueError(
-                            "Failed to import GPG key:\n{}".format(key)
+                            f"Failed to import GPG key:\n{key}"
                         )
                 self._gpg = gpg
             except Exception:

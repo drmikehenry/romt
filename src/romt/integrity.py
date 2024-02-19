@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import hashlib
 from pathlib import Path
@@ -59,7 +58,7 @@ def write_hash_file_for(path: Path) -> None:
     h = hash_file(path)
     path_sha256 = path_append_hash_suffix(path)
     with path_sha256.open("w") as f:
-        f.write("{}  {}\n".format(h, path.name))
+        f.write(f"{h}  {path.name}\n")
 
 
 def verify_hash(path: Path, expected_hash: str) -> None:

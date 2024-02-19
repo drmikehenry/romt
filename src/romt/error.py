@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 from typing import Optional
 
@@ -10,7 +9,7 @@ class Error(Exception):
         self.message = message
 
     def __str__(self) -> str:
-        return "error: {}".format(self.message)
+        return f"error: {self.message}"
 
 
 class UsageError(Error):
@@ -21,7 +20,7 @@ class UsageError(Error):
 class AbortError(Error):
     def __init__(self, message: str = "") -> None:
         if message:
-            super().__init__("Aborting: {}".format(message))
+            super().__init__(f"Aborting: {message}")
         else:
             super().__init__("Aborting")
 
@@ -44,7 +43,7 @@ class IntegrityError(Error):
                 name, sig_name
             )
         else:
-            message = "Integrity failure for {}".format(name)
+            message = f"Integrity failure for {name}"
         super().__init__(message)
         self.name = name
         self.actual_hash = actual_hash
@@ -54,13 +53,13 @@ class IntegrityError(Error):
 
 class MissingFileError(Error):
     def __init__(self, name: str) -> None:
-        super().__init__("missing file {}".format(name))
+        super().__init__(f"missing file {name}")
         self.name = name
 
 
 class MissingDirectoryError(Error):
     def __init__(self, name: str) -> None:
-        super().__init__("missing directory {}".format(name))
+        super().__init__(f"missing directory {name}")
         self.name = name
 
 
@@ -77,5 +76,5 @@ class DownloadError(Error):
 
 class UnexpectedArchiveMemberError(Error):
     def __init__(self, name: str) -> None:
-        super().__init__("unexpected archive member {}".format(name))
+        super().__init__(f"unexpected archive member {name}")
         self.name = name

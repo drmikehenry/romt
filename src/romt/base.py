@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import argparse
 from pathlib import Path
@@ -12,7 +11,7 @@ import romt.download
 def verify_commands(commands: List[str], valid_commands: List[str]) -> None:
     for command in commands:
         if command not in valid_commands:
-            raise error.UsageError("invalid COMMAND {}".format(repr(command)))
+            raise error.UsageError(f"invalid COMMAND {repr(command)}")
 
 
 def add_downloader_arguments(parser: argparse.ArgumentParser) -> None:

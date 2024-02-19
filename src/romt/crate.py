@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import argparse
 import enum
@@ -135,12 +134,12 @@ def _read_crates_config(crates_root_path: Path) -> CratesConfig:
             toml_dict = toml.loads(f.read())
         if not isinstance(toml_dict, dict):
             common.abort(
-                "invalid config structure in {}".format(crates_root_path)
+                f"invalid config structure in {crates_root_path}"
             )
         for key in toml_dict:
             if key not in crates_config:
                 common.abort(
-                    "invalid key {} in {}".format(key, crates_root_path)
+                    f"invalid key {key} in {crates_root_path}"
                 )
         crates_config.update(toml_dict)
     else:
@@ -190,16 +189,16 @@ def crate_prefix_from_name(name: str, prefix_style: PrefixStyle) -> str:
     elif len(name) == 2:
         prefix = "2"
     elif len(name) == 3:
-        prefix = "3/{}".format(name[0])
+        prefix = f"3/{name[0]}"
     else:
-        prefix = "{}/{}".format(name[:2], name[2:4])
+        prefix = f"{name[:2]}/{name[2:4]}"
     if prefix_style is PrefixStyle.LOWER:
         prefix = prefix.lower()
     return prefix
 
 
 def crate_basename_from_name_version(name: str, version: str) -> str:
-    return "{}-{}.crate".format(name, version)
+    return f"{name}-{version}.crate"
 
 
 def crate_rel_path_from_name_version(
@@ -237,7 +236,7 @@ class Crate:
         self.hash = hash
 
     def __str__(self) -> str:
-        return "Crate({}, {}, {})".format(self.name, self.version, self.hash)
+        return f"Crate({self.name}, {self.version}, {self.hash})"
 
     @property
     def ident(self) -> Tuple[str, str]:
@@ -256,8 +255,7 @@ class Crate:
 
 
 def blob_lines(blob: bytes) -> Generator[str, None, None]:
-    for line in blob.decode("utf8").splitlines():
-        yield line
+    yield from blob.decode("utf8").splitlines()
 
 
 def crate_from_text(line: str) -> Crate:
@@ -296,7 +294,7 @@ def crates_in_commit_range(
     ):
         if not rex.search(path):
             continue
-        old_versions = set(crate.version for crate in blob_crates(start_blob))
+        old_versions = {crate.version for crate in blob_crates(start_blob)}
         for crate in blob_crates(end_blob):
             if crate.version not in old_versions:
                 yield crate
@@ -332,7 +330,7 @@ def get_index_path(index: str) -> Path:
     path = Path(index)
     if not path.is_dir():
         raise error.UsageError(
-            "{} is not a valid index directory".format(path)
+            f"{path} is not a valid index directory"
         )
     return path
 
@@ -346,7 +344,7 @@ def get_crates_root_path(crates_root: str) -> Path:
     path = Path(crates_root)
     if not path.is_dir():
         raise error.UsageError(
-            "{} is not a valid crates directory".format(path)
+            f"{path} is not a valid crates directory"
         )
     return path
 
@@ -378,9 +376,9 @@ def mark(repo: git.Repo, end: str) -> None:
             )
         else:
             common.iprint(
-                "Move branch {} to point to {}".format(repr(branch), repr(end))
+                f"Move branch {repr(branch)} to point to {repr(end)}"
             )
-            repo.create_head("refs/heads/{}".format(branch), end, force=True)
+            repo.create_head(f"refs/heads/{branch}", end, force=True)
 
 
 def list_crates(crates: List[Crate]) -> None:
@@ -453,7 +451,7 @@ def _process_crates(
     downloader.run_job(_process_inner)
 
     common.iprint(
-        "{} bad paths, {} good paths".format(num_bad_paths, num_good_paths)
+        f"{num_bad_paths} bad paths, {num_good_paths} good paths"
     )
 
     common.close_optional(good_paths_file)
@@ -533,7 +531,7 @@ def pack(
 
         if bundle_path is not None:
             packed_name = INDEX_BUNDLE_PACKED_NAME
-            common.vprint("[pack] {}".format(packed_name))
+            common.vprint(f"[pack] {packed_name}")
             tar_f.add(str(bundle_path), packed_name)
 
         for crate in sorted(crates, key=lambda crate: crate.ident):
@@ -541,17 +539,17 @@ def pack(
             packed_rel_path = crate.rel_path(archive_prefix_style)
             packed_name = "crates/" + packed_rel_path.as_posix()
             try:
-                common.vprint("[pack] {}".format(crate.basename()))
+                common.vprint(f"[pack] {crate.basename()}")
                 tar_f.add(str(path), packed_name)
                 num_good_paths += 1
             except FileNotFoundError:
                 num_bad_paths += 1
-                common.eprint("Error: Missing {}".format(crate.basename()))
+                common.eprint(f"Error: Missing {crate.basename()}")
                 if not keep_going:
                     raise error.AbortError()
 
     common.iprint(
-        "{} bad paths, {} good paths".format(num_bad_paths, num_good_paths)
+        f"{num_bad_paths} bad paths, {num_good_paths} good paths"
     )
 
 
@@ -599,21 +597,21 @@ def unpack(
                 found_file = True
                 found_bundle = True
                 tar_info.name = str(bundle_path)
-                common.vprint("[unpack] {}".format(tar_info.name))
+                common.vprint(f"[unpack] {tar_info.name}")
                 tar_f.extract(tar_info)
 
             elif tar_info.name.startswith(crates_prefix):
                 found_file = True
                 name, version = crate_name_version_from_rel_path(tar_info.name)
                 if not name or not version:
-                    common.abort("Invalid crate {}".format(tar_info.name))
+                    common.abort(f"Invalid crate {tar_info.name}")
                 expected_rel_path = crate_rel_path_from_name_version(
                     name, version, archive_prefix_style
                 ).as_posix()
                 actual_rel_path = tar_info.name[len(crates_prefix) :]
                 if actual_rel_path != expected_rel_path:
                     common.abort(
-                        "Unexpected crate prefix for {}".format(tar_info.name)
+                        f"Unexpected crate prefix for {tar_info.name}"
                     )
 
                 rel_path = crate_rel_path_from_name_version(
@@ -621,20 +619,20 @@ def unpack(
                 )
                 tar_info.name = str(rel_path)
                 common.vprint(
-                    "[unpack] {}".format(os.path.basename(tar_info.name))
+                    f"[unpack] {os.path.basename(tar_info.name)}"
                 )
                 tar_f.extract(tar_info, str(crates_root))
                 num_crates += 1
 
             else:
                 common.abort(
-                    "Unexpected archive member {}".format(tar_info.name)
+                    f"Unexpected archive member {tar_info.name}"
                 )
 
     if not found_bundle:
-        common.abort("Missing {} in archive".format(INDEX_BUNDLE_PACKED_NAME))
+        common.abort(f"Missing {INDEX_BUNDLE_PACKED_NAME} in archive")
 
-    common.iprint("{} extracted crates".format(num_crates))
+    common.iprint(f"{num_crates} extracted crates")
 
 
 def _config_json_path(repo: git.Repo) -> Path:
@@ -655,7 +653,7 @@ def update_config_json(repo: git.Repo, config: bytes) -> None:
     old_config = read_config_json(repo)
     if old_config is None or config != old_config:
         config_path = _config_json_path(repo)
-        common.vprint("update-config: {}".format(config_path))
+        common.vprint(f"update-config: {config_path}")
         config_path.write_bytes(config)
         repo.index.add(str(config_path))
         repo.index.commit("Apply config.json adjustments")
@@ -702,7 +700,7 @@ def _init_common(
 ) -> git.Repo:
     if index_path.exists():
         raise error.UsageError(
-            "index directory {} already exists".format(repr(str(index_path)))
+            f"index directory {repr(str(index_path))} already exists"
         )
     if crates_root_path.exists():
         raise error.UsageError(
@@ -711,7 +709,7 @@ def _init_common(
             )
         )
     common.iprint(
-        "create crates directory at {}:".format(repr(str(crates_root_path)))
+        f"create crates directory at {repr(str(crates_root_path))}:"
     )
     crates_root_path.mkdir(parents=True)
     crates_config = _default_crates_config()
@@ -726,11 +724,11 @@ def _init_common(
         raise
 
     common.iprint(
-        "create index repository at {}:".format(repr(str(index_path)))
+        f"create index repository at {repr(str(index_path))}:"
     )
     index_path.mkdir(parents=True)
     repo = git.Repo.init(str(index_path))
-    common.iprint("  remote add origin {}".format(origin_location))
+    common.iprint(f"  remote add origin {origin_location}")
     repo.create_remote("origin", origin_location)
 
     # Setup "HEAD" to new "working" branch.
@@ -968,7 +966,7 @@ class Main(base.BaseMain):
             self._crates = sorted(
                 crates_by_ident.values(), key=lambda crate: crate.ident
             )
-            common.vprint("[{} crates in range]".format(len(self._crates)))
+            common.vprint(f"[{len(self._crates)} crates in range]")
         return self._crates
 
     def get_bundle_path(self) -> Path:
@@ -1129,7 +1127,7 @@ class Main(base.BaseMain):
 
         while commands:
             command = commands.pop(0)
-            common.iprint("{}...".format(command))
+            common.iprint(f"{command}...")
             if command in ("update", "export", "import"):
                 if command == "update":
                     cmd = "pull download mark"

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 from contextlib import contextmanager
 import datetime
@@ -149,7 +148,7 @@ def make_dirs_for(path: Path) -> None:
 
 def log(log_file: Optional[IO[Any]], message: Any) -> None:
     if log_file is not None:
-        log_file.write("{}\n".format(message))
+        log_file.write(f"{message}\n")
         log_file.flush()
 
 
@@ -177,7 +176,7 @@ def split_flatten_words(words: Iterable[str]) -> List[str]:
 def split_flatten_normalize_words(words: Iterable[str]) -> List[str]:
     """split_flatten_words(), remove dups and empty, sort.
     """
-    norm_words = set(w for w in split_flatten_words(words) if w)
+    norm_words = {w for w in split_flatten_words(words) if w}
     return sorted(norm_words)
 
 

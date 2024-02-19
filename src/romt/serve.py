@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import argparse
 import http.server
@@ -107,7 +106,7 @@ class Handler(http.server.CGIHTTPRequestHandler):
             )
 
         if self.path != path:
-            common.iprint("Rewrite URL: {} -> {}".format(self.path, path))
+            common.iprint(f"Rewrite URL: {self.path} -> {path}")
             self.path = path
 
     def do_get(self) -> None:
@@ -151,7 +150,7 @@ def get_git_http_backend_path() -> Optional[Path]:
 def make_git_cgi_script(git_http_backend_path: Path) -> None:
     cgi_path = Path("cgi-bin")
     if not cgi_path.is_dir():
-        common.iprint("mkdir {}".format(cgi_path))
+        common.iprint(f"mkdir {cgi_path}")
         cgi_path.mkdir()
     if common.is_windows:
         extension = ".bat"
@@ -161,7 +160,7 @@ def make_git_cgi_script(git_http_backend_path: Path) -> None:
         template = "#!/bin/sh\nexec '{}'\n"
     script_path = cgi_path / ("git-http-backend" + extension)
     script = template.format(git_http_backend_path)
-    common.iprint("Create script {} ({})".format(script_path, repr(script)))
+    common.iprint(f"Create script {script_path} ({repr(script)})")
     script_path.write_text(script, encoding="utf-8")
     if not common.is_windows:
         common.chmod_executable(script_path)
@@ -175,7 +174,7 @@ def setup_git_cgi() -> None:
     if git_cgi_path:
         if not common.is_windows and not common.is_executable(git_cgi_path):
             common.eprint(
-                "Warning: setting executable flag on {}".format(git_cgi_path)
+                f"Warning: setting executable flag on {git_cgi_path}"
             )
             common.chmod_executable(git_cgi_path)
     else:

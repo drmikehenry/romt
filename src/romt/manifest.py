@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# coding=utf-8
 
 import collections
 import copy
@@ -61,7 +60,7 @@ class Package:
     def rel_path(self) -> str:
         if not self.has_rel_path:
             raise ValueError(
-                "Package {}/{} missing xz_url".format(self.name, self.target)
+                f"Package {self.name}/{self.target} missing xz_url"
             )
         url = self.xz_url
         prefix = "/dist/"
@@ -112,11 +111,11 @@ class Manifest:
 
     @property
     def spec(self) -> str:
-        return "{}-{}".format(self.channel, self.date)
+        return f"{self.channel}-{self.date}"
 
     @property
     def ident(self) -> str:
-        return "{}({})".format(self.spec, self.version)
+        return f"{self.spec}({self.version})"
 
     def get_package(self, package_name: str, target: str) -> Package:
         details = self._dict["pkg"][package_name]["target"][target]
@@ -151,7 +150,7 @@ class Manifest:
                 yield package
 
     def all_targets(self) -> List[str]:
-        targets = set(p.target for p in self.gen_all_packages())
+        targets = {p.target for p in self.gen_all_packages()}
         targets.discard("*")
         return sorted(targets)
 
@@ -161,13 +160,13 @@ class Manifest:
         targets: Optional[Iterable[str]] = None,
         rel_path_is_present: Optional[Callable[[str], bool]] = None,
     ) -> List[str]:
-        available_targets = set(
+        available_targets = {
             p.target
             for p in self.gen_available_packages(
                 targets=targets,
                 rel_path_is_present=rel_path_is_present,
             )
-        )
+        }
         available_targets.discard("*")
         return sorted(available_targets)
 
