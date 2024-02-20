@@ -12,6 +12,10 @@ import typing
 from typing import Any, Dict, Generator, List, Optional, Tuple
 import urllib.parse
 
+# Without this environment variable, importing `git` will cause failure
+# when the `git` command is not found.  We want to defer the probe for Git
+# until we know we need it (whenever we acquire a `git.Repo` instance).
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 import git
 import git.objects
 import git.remote
@@ -335,7 +339,14 @@ def get_index_path(index: str) -> Path:
 
 def get_repo(index: str) -> git.Repo:
     path = get_index_path(index)
-    return git.Repo(str(path))
+    repo = git.Repo(str(path))
+    try:
+        repo.git.version()
+    except git.exc.GitCommandNotFound:
+        raise error.GitError(
+            "`git` command not found; Git is required for this operation"
+        )
+    return repo
 
 
 def get_crates_root_path(crates_root: str) -> Path:

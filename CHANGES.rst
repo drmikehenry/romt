@@ -21,6 +21,8 @@ Version 0.5.0
 
 - Switch to Python Poetry for dependency management.
 
+- Require ``git`` only for operations that need it.
+
 Version 0.4.0
 =============
 
