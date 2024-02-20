@@ -192,7 +192,7 @@ class Main(dist.DistMain):
             common.vprint(f"[read] {path}")
         else:
             raise error.MissingFileError(str(path))
-        return toml.load(path)["version"]
+        return str(toml.load(path)["version"])
 
     @property
     def artifact_root_rel_path(self) -> str:

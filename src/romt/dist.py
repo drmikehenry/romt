@@ -98,4 +98,4 @@ class DistMain(base.BaseMain):
         base_url = self.args.url
         if not base_url.endswith("/"):
             base_url += "/"
-        return urllib.parse.urljoin(base_url, rel_path)
+        return str(urllib.parse.urljoin(base_url, rel_path))

@@ -115,14 +115,8 @@ max-complexity = 15
 # Type checking
 
 [tool.mypy]
-warn_unused_configs = true
+strict = true
 ignore_missing_imports = true
-
-disallow_untyped_calls = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
 
 ##############################################################################
 # Coverage support

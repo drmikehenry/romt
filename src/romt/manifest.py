@@ -34,7 +34,7 @@ class Package:
         self.name = name
         self.target = target
         self.available = details["available"]
-        self.xz_url = details.get("xz_url", "")
+        self.xz_url = str(details.get("xz_url", ""))
 
     def _fields(self) -> Tuple[str, str]:
         return (self.name, self.target)
@@ -52,7 +52,7 @@ class Package:
 
     @property
     def has_rel_path(self) -> bool:
-        return self.xz_url != ""
+        return bool(self.xz_url != "")
 
     @property
     def rel_path(self) -> str:
@@ -78,7 +78,7 @@ class Manifest:
 
     @property
     def _rust_src_version(self) -> str:
-        version = self._dict["pkg"]["rust-src"]["version"]
+        version = str(self._dict["pkg"]["rust-src"]["version"])
         # Sample version lines found below [pkg.rust-src]:
         # version = "1.43.0-beta.5 (934ae7739 2020-04-06)"
         # version = "1.44.0-nightly (42abbd887 2020-04-07)"
@@ -105,7 +105,7 @@ class Manifest:
 
     @property
     def date(self) -> str:
-        return self._dict["date"]
+        return str(self._dict["date"])
 
     @property
     def spec(self) -> str:

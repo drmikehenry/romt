@@ -83,9 +83,9 @@ class PrefixStyle(enum.Enum):
         return cls.MIXED
 
     def to_config_str(self) -> str:
-        if self is self.LOWER:
+        if self is PrefixStyle.LOWER:
             return "lower"
-        assert self is self.MIXED
+        assert self is PrefixStyle.MIXED
         return "mixed"
 
 
@@ -908,7 +908,7 @@ class Main(base.BaseMain):
             raise error.UsageError("missing START")
         elif start == "0":
             start = ""
-        return start
+        return str(start)
 
     def get_start(self) -> str:
         start = self._get_start()
@@ -1001,7 +1001,7 @@ class Main(base.BaseMain):
             "config",
         ]
 
-        commands = self.args.commands[:]
+        commands = [str(c) for c in self.args.commands]
         if commands:
             base.verify_commands(commands, valid_commands)
         else:
