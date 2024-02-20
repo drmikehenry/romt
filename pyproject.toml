@@ -87,13 +87,15 @@ target-version = ["py38"]
 # Style checking
 
 [tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
 ignore = [
     "N811",
     "N812",
     "N813",
     "N814",
 ]
-line-length = 79
 select = [
     "C9",
     "E",
@@ -103,10 +105,10 @@ select = [
     "W",
 ]
 
-[tool.ruff.flake8-quotes]
+[tool.ruff.lint.flake8-quotes]
 inline-quotes = "double"
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 15
 
 ##############################################################################

@@ -7,11 +7,17 @@ These notes are intended for use by the maintainer.
 Making a release
 ================
 
-- Activate the ``romt`` virtual environment.
-
 - Verify proper ``version = "x.y.z"`` in ``pyproject.toml``.
 
 - Verify changes are recorded in ``CHANGES.rst``.
+
+- Run a Poetry shell::
+
+    poetry shell
+
+- Verify all Nox tests are passing::
+
+    nox
 
 - On Linux, run:
 
