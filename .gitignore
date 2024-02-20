@@ -3,7 +3,6 @@
 .mypy_cache/
 /.coverage
 /.coverage.py*
-/.tox/
 /build/
 /envs/
 /fake/
