@@ -126,9 +126,7 @@ class Verifier:
                 for key in RUST_KEYS:
                     result = gpg.import_keys(key)
                     if not result:
-                        raise ValueError(
-                            f"Failed to import GPG key:\n{key}"
-                        )
+                        raise ValueError(f"Failed to import GPG key:\n{key}")
                 self._gpg = gpg
             except Exception:
                 common.eprint(

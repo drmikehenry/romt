@@ -113,7 +113,7 @@ class Downloader:
         hash: str,
         *,
         cached: bool = True,
-        assume_ok: bool = False
+        assume_ok: bool = False,
     ) -> None:
         if cached:
             if assume_ok and dest_path.is_file():
@@ -136,7 +136,7 @@ class Downloader:
         hash: str,
         *,
         cached: bool = True,
-        assume_ok: bool = False
+        assume_ok: bool = False,
     ) -> None:
         self.run_job(
             self.adownload_verify_hash,
@@ -154,7 +154,7 @@ class Downloader:
         *,
         cached: bool = True,
         assume_ok: bool = False,
-        with_sig: bool = False
+        with_sig: bool = False,
     ) -> None:
         hash_path = integrity.path_append_hash_suffix(dest_path)
         sig_path = signature.path_append_sig_suffix(dest_path)
@@ -206,7 +206,7 @@ class Downloader:
         *,
         cached: bool = True,
         assume_ok: bool = False,
-        with_sig: bool = False
+        with_sig: bool = False,
     ) -> None:
         self.run_job(
             self.adownload_verify,

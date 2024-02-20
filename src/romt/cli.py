@@ -19,9 +19,7 @@ Rust Offline Mirror Tool
 
 epilog = """\
 See ``{project_name} --readme`` for more details.
-""".format(
-    project_name=project_name
-)
+""".format(project_name=project_name)
 
 
 def readme_from_pkg_resources() -> str:
@@ -76,15 +74,25 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "-v", "--verbose", action="count", default=0, help="verbose output",
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="verbose output",
     )
 
     parser.add_argument(
-        "-q", "--quiet", action="count", default=0, help="quiet output",
+        "-q",
+        "--quiet",
+        action="count",
+        default=0,
+        help="quiet output",
     )
 
     parser.add_argument(
-        "--readme", action="store_true", help="display README.rst",
+        "--readme",
+        action="store_true",
+        help="display README.rst",
     )
 
     parser.add_argument(

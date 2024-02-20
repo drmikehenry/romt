@@ -251,9 +251,7 @@ class Main(dist.DistMain):
             specs.append(spec)
 
         if not specs:
-            raise error.UsageError(
-                f"no matches for wild SPEC {repr(spec)}"
-            )
+            raise error.UsageError(f"no matches for wild SPEC {repr(spec)}")
 
         return specs
 
@@ -280,9 +278,7 @@ class Main(dist.DistMain):
                 targets.update(self.downloaded_targets(version))
             else:
                 if target not in known_targets:
-                    common.eprint(
-                        f"warning: unknown target {repr(target)}"
-                    )
+                    common.eprint(f"warning: unknown target {repr(target)}")
                 targets.add(target)
         return sorted(targets)
 
@@ -463,9 +459,7 @@ class Main(dist.DistMain):
             # is not present.
             artifacts = list(version_path.glob("*/*"))
             if not artifacts:
-                raise error.UsageError(
-                    f"version {version} not present"
-                )
+                raise error.UsageError(f"version {version} not present")
             self._fixup_version(version)
 
         # Copy rustup/archive/<stable_version>/ to rustup/dist/.
@@ -481,9 +475,7 @@ class Main(dist.DistMain):
         if dist_path.is_dir():
             shutil.rmtree(str(dist_path))
 
-        common.iprint(
-            f"[copytree] {archive_version_path} -> {dist_path}"
-        )
+        common.iprint(f"[copytree] {archive_version_path} -> {dist_path}")
         shutil.copytree(str(archive_version_path), str(dist_path))
 
     def _run(self) -> None:

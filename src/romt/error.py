@@ -32,11 +32,13 @@ class IntegrityError(Error):
         *,
         actual_hash: Optional[str] = None,
         expected_hash: Optional[str] = None,
-        sig_name: Optional[str] = None
+        sig_name: Optional[str] = None,
     ) -> None:
         if actual_hash and expected_hash:
             message = "Bad hash for {} (got {}, expected {})".format(
-                name, actual_hash, expected_hash,
+                name,
+                actual_hash,
+                expected_hash,
             )
         elif sig_name:
             message = "Signature failure for {} using signature {}".format(

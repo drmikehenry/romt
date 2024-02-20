@@ -106,15 +106,13 @@ def parse_spec(spec: str) -> Tuple[str, str]:
         )
         """
 
-    m = re.match(
-        fr"{channel_rex} (?: - {date_rex})? $", spec, re.VERBOSE
-    )
+    m = re.match(rf"{channel_rex} (?: - {date_rex})? $", spec, re.VERBOSE)
     if m:
         channel = m.group("channel")
         date = m.group("date") or ""
         return date, channel
 
-    m = re.match(fr"{date_rex} $", spec, re.VERBOSE)
+    m = re.match(rf"{date_rex} $", spec, re.VERBOSE)
     if m:
         date = m.group("date")
         return date, "*"
@@ -288,18 +286,14 @@ class Main(dist.DistMain):
                 channels = channel_patterns.intersection(
                     self.channels_in_dest_date(d)
                 )
-                specs.extend(
-                    f"{channel}-{d}" for channel in channels
-                )
+                specs.extend(f"{channel}-{d}" for channel in channels)
                 if date == "latest" and specs:
                     break
         else:
             specs.append(spec)
 
         if not specs:
-            raise error.UsageError(
-                f"no matches for wild SPEC {repr(spec)}"
-            )
+            raise error.UsageError(f"no matches for wild SPEC {repr(spec)}")
 
         return specs
 
@@ -569,7 +563,7 @@ class Main(dist.DistMain):
                 targets = self.adjust_targets(manifest, base_targets)
                 packages = sorted(
                     self.downloaded_target_packages(manifest, targets=targets),
-                    key=lambda p: (p.target, p.name)
+                    key=lambda p: (p.target, p.name),
                 )
                 common.iprint(
                     "  packages: {}, targets: {}".format(

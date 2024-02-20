@@ -68,9 +68,7 @@ COMMAND values:
 When multiple COMMANDs are given, they share all option values.
 
 For complete details, try ``romt --readme`` to view README.rst.
-""".format(
-    INDEX_NAME=INDEX_NAME, INDEX_BUNDLE_NAME=INDEX_BUNDLE_NAME
-)
+""".format(INDEX_NAME=INDEX_NAME, INDEX_BUNDLE_NAME=INDEX_BUNDLE_NAME)
 
 
 class PrefixStyle(enum.Enum):
@@ -135,14 +133,10 @@ def _read_crates_config(crates_root_path: Path) -> CratesConfig:
         with crates_config_path.open() as f:
             toml_dict = toml.loads(f.read())
         if not isinstance(toml_dict, dict):
-            common.abort(
-                f"invalid config structure in {crates_root_path}"
-            )
+            common.abort(f"invalid config structure in {crates_root_path}")
         for key in toml_dict:
             if key not in crates_config:
-                common.abort(
-                    f"invalid key {key} in {crates_root_path}"
-                )
+                common.abort(f"invalid key {key} in {crates_root_path}")
         crates_config.update(toml_dict)
     else:
         crates_config = _legacy_crates_config()
@@ -335,9 +329,7 @@ def git_bundle_create(
 def get_index_path(index: str) -> Path:
     path = Path(index)
     if not path.is_dir():
-        raise error.UsageError(
-            f"{path} is not a valid index directory"
-        )
+        raise error.UsageError(f"{path} is not a valid index directory")
     return path
 
 
@@ -349,9 +341,7 @@ def get_repo(index: str) -> git.Repo:
 def get_crates_root_path(crates_root: str) -> Path:
     path = Path(crates_root)
     if not path.is_dir():
-        raise error.UsageError(
-            f"{path} is not a valid crates directory"
-        )
+        raise error.UsageError(f"{path} is not a valid crates directory")
     return path
 
 
@@ -401,7 +391,7 @@ def _process_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
 ) -> None:
     good_paths_file = common.open_optional(good_paths_log_path, "w")
     bad_paths_file = common.open_optional(bad_paths_log_path, "w")
@@ -451,14 +441,13 @@ def _process_crates(
             for crate in crates:
                 await limiter.acquire_on_behalf_of(crate)
                 nursery.start_soon(
-                    _process_one, crate,
+                    _process_one,
+                    crate,
                 )
 
     downloader.run_job(_process_inner)
 
-    common.iprint(
-        f"{num_bad_paths} bad paths, {num_good_paths} good paths"
-    )
+    common.iprint(f"{num_bad_paths} bad paths, {num_good_paths} good paths")
 
     common.close_optional(good_paths_file)
     common.close_optional(bad_paths_file)
@@ -476,7 +465,7 @@ def download_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
 ) -> None:
     _process_crates(
         downloader,
@@ -498,7 +487,7 @@ def verify_crates(
     bad_paths_log_path: str,
     *,
     keep_going: bool,
-    assume_ok: bool
+    assume_ok: bool,
 ) -> None:
     _process_crates(
         downloader,
@@ -554,9 +543,7 @@ def pack(
                 if not keep_going:
                     raise error.AbortError()
 
-    common.iprint(
-        f"{num_bad_paths} bad paths, {num_good_paths} good paths"
-    )
+    common.iprint(f"{num_bad_paths} bad paths, {num_good_paths} good paths")
 
 
 def unpack(
@@ -624,16 +611,12 @@ def unpack(
                     name, version, prefix_style
                 )
                 tar_info.name = str(rel_path)
-                common.vprint(
-                    f"[unpack] {os.path.basename(tar_info.name)}"
-                )
+                common.vprint(f"[unpack] {os.path.basename(tar_info.name)}")
                 tar_f.extract(tar_info, str(crates_root))
                 num_crates += 1
 
             else:
-                common.abort(
-                    f"Unexpected archive member {tar_info.name}"
-                )
+                common.abort(f"Unexpected archive member {tar_info.name}")
 
     if not found_bundle:
         common.abort(f"Missing {INDEX_BUNDLE_PACKED_NAME} in archive")
@@ -716,9 +699,7 @@ def _init_common(
                 repr(str(crates_root_path))
             )
         )
-    common.iprint(
-        f"create crates directory at {repr(str(crates_root_path))}:"
-    )
+    common.iprint(f"create crates directory at {repr(str(crates_root_path))}:")
     crates_root_path.mkdir(parents=True)
     crates_config = _default_crates_config()
     crates_config["prefix"] = prefix_style.to_config_str()
@@ -731,9 +712,7 @@ def _init_common(
         shutil.rmtree(crates_root_path)
         raise
 
-    common.iprint(
-        f"create index repository at {repr(str(index_path))}:"
-    )
+    common.iprint(f"create index repository at {repr(str(index_path))}:")
     index_path.mkdir(parents=True)
     repo = git.Repo.init(str(index_path))
     common.iprint(f"  remote add origin {origin_location}")
@@ -786,9 +765,7 @@ def configure_index(repo: git.Repo, server_url: str) -> None:
     "dl": "{}",
     "api": "{}"
 }}
-""".format(
-        server_url + "crates/{crate}/{crate}-{version}.crate", server_url
-    )
+""".format(server_url + "crates/{crate}/{crate}-{version}.crate", server_url)
     update_config_json(repo, config.encode("utf-8"))
 
 
@@ -1040,7 +1017,8 @@ class Main(base.BaseMain):
     def cmd_mark(self) -> None:
         self.forget_crates()
         mark(
-            self.get_repo(), self.args.end,
+            self.get_repo(),
+            self.args.end,
         )
 
     def cmd_unpack(self) -> None:

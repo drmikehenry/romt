@@ -126,7 +126,8 @@ def gen_dirs(parent: Path) -> Generator[Path, None, None]:
 def reversed_date_dir_names(parent: Path) -> List[str]:
     """list of yyyy-mm-dd dirnames in parent (newest to oldest)."""
     dirs = sorted(
-        (d.name for d in gen_dirs(parent) if is_date(d.name)), reverse=True,
+        (d.name for d in gen_dirs(parent) if is_date(d.name)),
+        reverse=True,
     )
     return dirs
 
@@ -161,8 +162,7 @@ def split_word(item: str) -> List[str]:
 
 
 def split_flatten_words(words: Iterable[str]) -> List[str]:
-    """split_word(each_word in words) into flattened, deduped list.
-    """
+    """split_word(each_word in words) into flattened, deduped list."""
     dedup = set()
     result = []
     for w in words:
@@ -174,8 +174,7 @@ def split_flatten_words(words: Iterable[str]) -> List[str]:
 
 
 def split_flatten_normalize_words(words: Iterable[str]) -> List[str]:
-    """split_flatten_words(), remove dups and empty, sort.
-    """
+    """split_flatten_words(), remove dups and empty, sort."""
     norm_words = {w for w in split_flatten_words(words) if w}
     return sorted(norm_words)
 

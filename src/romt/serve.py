@@ -102,7 +102,9 @@ class Handler(http.server.CGIHTTPRequestHandler):
             name = os.path.basename(parent)
             prefix = romt.crate.crate_prefix_from_name(name, prefix_style)
             path = "/crates/{}/{}/{}".format(
-                prefix, name, os.path.basename(path),
+                prefix,
+                name,
+                os.path.basename(path),
             )
 
         if self.path != path:
