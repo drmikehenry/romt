@@ -135,6 +135,9 @@ Option 3: Work with source
 If desired, the source may be cloned from Github and installed into a virtual
 environment.
 
+- Install Poetry globally as described in the documentation:
+  https://python-poetry.org/docs/#installation
+
 - Clone source:
 
   .. code-block:: sh
@@ -142,34 +145,10 @@ environment.
     git clone https://github.com/drmikehenry/romt
     cd romt
 
-- Create and activate a virtual environment for your platform:
+- Run a Poetry shell (which creates and activates a virtual environment
+  installed with Romt and all dependencies)::
 
-  - Linux:
-
-  .. code-block:: sh
-
-    python -m venv envs/linux
-    . envs/linux/bin/activate
-
-  - Windows:
-
-  .. code-block:: sh
-
-    py -3 -m venv envs\windows
-    envs\windows\Scripts\activate.bat
-
-  - Mac:
-
-  .. code-block:: sh
-
-    python -m venv envs/darwin
-    . envs/darwin/bin/activate
-
-- Install Romt in development mode:
-
-  .. code-block:: sh
-
-    pip install -e ".[dev]"
+    poetry shell
 
 - Optionally build an executable for your platform:
 

@@ -8,7 +8,7 @@ die()
 
 version=$(perl -ne \
     'if (/^\s*version\s*=\s*"((\d|\.)+)"/) { print "$1\n"; }' \
-    setup.py \
+    pyproject.toml \
 )
 
 echo "Release version: $version"
@@ -20,7 +20,7 @@ echo "Make Linux executable..."
 ./make-exec-linux.sh || die "Could not build for Linux"
 
 echo "Build egg and wheel..."
-python setup.py -q sdist bdist_wheel || die "Failed to build egg/wheel"
+poetry build || die "Failed to build egg/wheel"
 
 echo "twine check..."
 twine check dist/romt-"$version"* || die "twine check failed"

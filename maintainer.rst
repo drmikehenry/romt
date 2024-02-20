@@ -9,7 +9,7 @@ Making a release
 
 - Activate the ``romt`` virtual environment.
 
-- Verify proper ``version="x.y.z"`` in ``setup.py``.
+- Verify proper ``version = "x.y.z"`` in ``pyproject.toml``.
 
 - Verify changes are recorded in ``CHANGES.rst``.
 
@@ -24,11 +24,7 @@ Making a release
 Upgrading dependencies
 ======================
 
-- Update ``requirements.in``.
-
-- Update ``requirements.txt`` using ``pip-compile`` from ``pip-tools``::
-
-    pip-compile requirements.in
+- ``poetry upgrade``.
 
 Testing with fake crates
 ========================

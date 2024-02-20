@@ -19,6 +19,8 @@ Version 0.5.0
 - Note how to configure Cargo to use the Git command-line client for fetching
   the ``crates.io-index`` repository for greatly improved performance.
 
+- Switch to Python Poetry for dependency management.
+
 Version 0.4.0
 =============
 
