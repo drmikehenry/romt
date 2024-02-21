@@ -23,6 +23,18 @@ Version 0.5.0
 
 - Require ``git`` only for operations that need it.
 
+- Tighten command-line argument parsing for shared arguments.  Due to an
+  unfortunate design aspect of Python's ``argparse`` module, "global" arguments
+  do not work when shared between the main argument parser and subparsers.  So,
+  for example, ``romt --readme`` is accepted and correctly processed, whereas
+  ``romt crate --readme`` is not a syntax error but the ``--readme`` switch is
+  effectively ignored.  There doesn't appear to be a clean way to work around
+  this, so common arguments are no longer shared between the subparsers and the
+  main parser.  The two main switches (``--readme`` and ``--version``) must be
+  given before any subcommand, and the remaining switches (``--verbose``,
+  ``--quiet``, ``--num-jobs``, and ``--timeout``) must be given after the
+  subcommand name (e.g., ``romt crate --verbose``).
+
 Version 0.4.0
 =============
 

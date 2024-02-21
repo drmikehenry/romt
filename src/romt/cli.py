@@ -67,12 +67,6 @@ def readme() -> None:
 
 
 def add_common_arguments(parser: argparse.ArgumentParser) -> None:
-    romt_version = importlib.metadata.version("romt")
-
-    parser.add_argument(
-        "--version", action="version", version="%(prog)s " + romt_version
-    )
-
     parser.add_argument(
         "-v",
         "--verbose",
@@ -87,12 +81,6 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
         action="count",
         default=0,
         help="quiet output",
-    )
-
-    parser.add_argument(
-        "--readme",
-        action="store_true",
-        help="display README.rst",
     )
 
     parser.add_argument(
@@ -115,6 +103,8 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def make_parser() -> argparse.ArgumentParser:
+    romt_version = importlib.metadata.version("romt")
+
     common_parser = argparse.ArgumentParser(add_help=False)
     add_common_arguments(common_parser)
 
@@ -122,7 +112,16 @@ def make_parser() -> argparse.ArgumentParser:
         description=description,
         epilog=epilog,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        parents=[common_parser],
+    )
+
+    parser.add_argument(
+        "--version", action="version", version="%(prog)s " + romt_version
+    )
+
+    parser.add_argument(
+        "--readme",
+        action="store_true",
+        help="display README.rst",
     )
 
     subparsers = parser.add_subparsers(dest="subparser_name", help="OPERATION")
@@ -177,15 +176,19 @@ def make_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = make_parser()
     args = parser.parse_args()
-    common.set_max_verbosity(common.VERBOSITY_INFO + args.verbose - args.quiet)
-
+    if args.readme:
+        readme()
+        return
+    cmd = args.subparser_name
     try:
-        cmd = args.subparser_name
-        if args.readme:
-            readme()
-        elif cmd is None:
+        if cmd is None:
             raise error.UsageError("missing OPERATION (try --help)")
-        elif cmd == "crate":
+
+        common.set_max_verbosity(
+            common.VERBOSITY_INFO + args.verbose - args.quiet
+        )
+
+        if cmd == "crate":
             romt.crate.Main(args).run()
         elif cmd == "rustup":
             romt.rustup.Main(args).run()
