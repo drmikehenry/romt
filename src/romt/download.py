@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import functools
+import shutil
 from pathlib import Path
 from typing import (
     Any,
@@ -26,7 +27,25 @@ class Downloader:
     def set_warn_signature(self, warn_signature: bool) -> None:
         self._warn_signature = warn_signature
 
+    async def _aread_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+        prefix = "file://"
+        if url.startswith(prefix):
+            url = url[len(prefix) :]
+        try:
+            with open(url, "rb") as f:
+                # Unfortunately, mypy currently warns about this function:
+                #   Cannot infer type argument 1 of "copyfileobj"
+                # There is no fix at present; see:
+                #   https://github.com/python/mypy/issues/15031
+                # Therefore, just ignore this warning.
+                shutil.copyfileobj(f, fileobj)  # type: ignore
+        except FileNotFoundError as e:
+            raise error.DownloadError(url, e)
+
     async def adownload_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+        if not url.startswith(("http:", "https:")):
+            await self._aread_fileobj(url, fileobj)
+            return
         try:
             async with self._client.stream("GET", url) as response:
                 response.raise_for_status()
