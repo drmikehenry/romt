@@ -1370,6 +1370,10 @@ For each crate, the CRATES_URL template will be expanded by replacing
 example, the default URL for version ``1.0.99`` of the ``serde`` crate would be:
 https://static.crates.io/crates/serde/serde-1.0.99.crate
 
+In addition, ``{prefix}`` and ``{lowerprefix}`` will be replaced with the
+crate's prefix and lowercase prefix, respectively (where the construction of the
+prefix is explained below).
+
 As an alternative, to use the crate.io API for downloading crates, set
 CRATES_URL to: https://crates.io/api/v1/crates/{crate}/{version}/download
 

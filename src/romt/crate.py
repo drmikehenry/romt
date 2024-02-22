@@ -424,13 +424,18 @@ def _process_crates(
         nonlocal num_good_paths, num_bad_paths
         rel_path = crate.rel_path(prefix_style)
         path = crates_root / rel_path
+        prefix = crate_prefix_from_name(crate.name, PrefixStyle.MIXED)
+        lower_prefix = crate_prefix_from_name(crate.name, PrefixStyle.LOWER)
         is_good = False
         try:
             if dl_template is None:
                 downloader.verify_hash(path, crate.hash)
             else:
                 url = dl_template.format(
-                    crate=crate.name, version=crate.version
+                    crate=crate.name,
+                    version=crate.version,
+                    prefix=prefix,
+                    lowerprefix=lower_prefix,
                 )
                 await downloader.adownload_verify_hash(
                     url, path, crate.hash, assume_ok=assume_ok

@@ -122,6 +122,8 @@ Version 0.3.2
   `httpx`-related errors (see also issue #10 for more debugging of `httpx`
   proxy-related issues).
 
+- Support ``{prefix}`` and ``{lowerprefix}`` in ``crate --crates-url``.
+
 Version 0.3.1
 =============
 
