@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import re
 import shutil
 from pathlib import Path
@@ -61,6 +62,8 @@ When multiple COMMANDs are given, they share all option values.
 
 For complete details, try ``romt --readme`` to view README.rst.
 """
+
+TOOLCHAIN_DEFAULT_URL = "https://static.rust-lang.org/dist"
 
 
 def parse_spec(spec: str) -> Tuple[str, str]:
@@ -159,11 +162,19 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         help="""local download directory (default: %(default)s)""",
     )
 
+    default_url = os.environ.get("RUSTUP_DIST_SERVER", TOOLCHAIN_DEFAULT_URL)
+    if default_url == TOOLCHAIN_DEFAULT_URL:
+        default_help = "; override default via env. var. `RUSTUP_DIST_SERVER`"
+    else:
+        default_help = (
+            " from env. var. `RUSTUP_DIST_SERVER`;"
+            f" otherwise default would be `{TOOLCHAIN_DEFAULT_URL}`"
+        )
     parser.add_argument(
         "--url",
         action="store",
-        default="https://static.rust-lang.org/dist",
-        help="""base URL of dist (default: %(default)s)""",
+        default=default_url,
+        help=f"base URL of dist (default: `%(default)s`{default_help})",
     )
 
     parser.add_argument(

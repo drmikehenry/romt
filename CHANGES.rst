@@ -35,6 +35,10 @@ Version 0.5.0
   ``--quiet``, ``--num-jobs``, and ``--timeout``) must be given after the
   subcommand name (e.g., ``romt crate --verbose``).
 
+- Allow environment variable ``RUSTUP_DIST_SERVER`` to override default value
+  for ``romt toolchain --url``. Allow environment variable
+  ``RUSTUP_UPDATE_ROOT`` to override default value for ``romt rustup --url``.
+
 Version 0.4.0
 =============
 

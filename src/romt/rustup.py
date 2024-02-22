@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import shutil
 from pathlib import Path
 from typing import (
@@ -48,6 +49,9 @@ When multiple COMMANDs are given, they share all option values.
 
 For complete details, try ``romt --readme`` to view README.rst.
 """
+
+RUSTUP_DEFAULT_URL = "https://static.rust-lang.org/rustup"
+
 
 # Note: Known targets are found by inspecting the S3 tree, e.g.::
 #  aws s3 ls --no-sign-request s3://static-rust-lang-org/rustup/archive/1.26.0/
@@ -139,11 +143,19 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         help="""local download directory (default: %(default)s)""",
     )
 
+    default_url = os.environ.get("RUSTUP_UPDATE_ROOT", RUSTUP_DEFAULT_URL)
+    if default_url == RUSTUP_DEFAULT_URL:
+        default_help = "; override default via env. var. `RUSTUP_UPDATE_ROOT`"
+    else:
+        default_help = (
+            " from env. var. `RUSTUP_UPDATE_ROOT`;"
+            f" otherwise default would be `{RUSTUP_DEFAULT_URL}`"
+        )
     parser.add_argument(
         "--url",
         action="store",
-        default="https://static.rust-lang.org/rustup",
-        help="""base URL of rustup (default: %(default)s)""",
+        default=default_url,
+        help=f"base URL of rustup (default: `%(default)s`{default_help})",
     )
 
     parser.add_argument(
