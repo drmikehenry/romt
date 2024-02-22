@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
-from contextlib import contextmanager
 import datetime
 import os
-from pathlib import Path
 import platform
 import re
 import stat
 import tarfile
+from contextlib import contextmanager
+from pathlib import Path
 from typing import (
+    IO,
     Any,
     Generator,
-    IO,
     Iterable,
     List,
     NoReturn,

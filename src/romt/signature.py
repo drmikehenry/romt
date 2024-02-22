@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
-from pathlib import Path
+
 import tempfile
+from pathlib import Path
 from typing import Any, Optional
 
 import gnupg
 
-from romt import common
-from romt import error
-
+from romt import common, error
 
 RUST_KEYS = [
     """\

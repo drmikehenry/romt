@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-from pathlib import Path
 import shutil
+from pathlib import Path
 from typing import (
     List,
     Set,
@@ -11,11 +11,7 @@ from typing import (
 
 import toml
 
-from romt import base
-from romt import common
-from romt import dist
-from romt import error
-from romt import integrity
+from romt import base, common, dist, error, integrity
 
 description = """\
 Mirror and manage rustup tooling.

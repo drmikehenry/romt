@@ -4,13 +4,13 @@ import argparse
 import enum
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import tempfile
 import typing
-from typing import Any, Dict, Generator, List, Optional, Tuple
 import urllib.parse
+from pathlib import Path
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 # Without this environment variable, importing `git` will cause failure
 # when the `git` command is not found.  We want to defer the probe for Git
@@ -22,11 +22,8 @@ import git.remote
 import toml
 import trio
 
-from romt import base
-from romt import common
-from romt import error
 import romt.download
-
+from romt import base, common, error
 
 # Name of index:
 INDEX_NAME = "crates.io-index"

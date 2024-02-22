@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 from typing import List, Optional
 
-from romt import error
 import romt.download
+from romt import error
 
 
 def verify_commands(commands: List[str], valid_commands: List[str]) -> None:

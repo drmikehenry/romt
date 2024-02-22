@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
-
+import urllib.parse
 from pathlib import Path
 from typing import List, Optional
-import urllib.parse
 
-from romt import base
-from romt import common
-from romt import error
+from romt import base, common, error
 
 
 def expand_target_alias(target: str) -> str:

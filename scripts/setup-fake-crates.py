@@ -2,14 +2,13 @@
 
 import hashlib
 import json
-from pathlib import Path
 import shutil
 import subprocess
+from pathlib import Path
 
 import git
-import toml
-
 import romt.crate
+import toml
 
 orig_path = Path("orig").absolute()
 tmp_path = orig_path / "tmp"

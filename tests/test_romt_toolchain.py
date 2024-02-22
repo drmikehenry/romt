@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import pytest
-
-from romt import error
 import romt.toolchain
+from romt import error
 
 
 def test_parse_select() -> None:

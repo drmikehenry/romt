@@ -12,10 +12,7 @@ from typing import (
 import httpx
 import trio
 
-from romt import common
-from romt import error
-from romt import integrity
-from romt import signature
+from romt import common, error, integrity, signature
 
 
 class Downloader:

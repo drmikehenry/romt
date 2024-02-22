@@ -6,9 +6,8 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from romt import common
 import romt.crate
-
+from romt import common
 
 description = """\
 Serve Rust artifacts via http.

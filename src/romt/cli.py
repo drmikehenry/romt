@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
+import importlib.metadata
 import sys
 
-from romt import common
-from romt import error
 import romt.crate
 import romt.rustup
 import romt.serve
 import romt.toolchain
-import importlib.metadata
+from romt import common, error
 
 project_name = "romt"
 
@@ -23,10 +22,11 @@ See ``{project_name} --readme`` for more details.
 
 
 def readme_from_pkg_resources() -> str:
-    # This method works when the package is properly installed via "pip".
-    import pkg_resources
     import email
     import textwrap
+
+    # This method works when the package is properly installed via "pip".
+    import pkg_resources
 
     try:
         dist = pkg_resources.get_distribution(project_name)

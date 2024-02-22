@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
-from pathlib import Path
 import re
 import shutil
+from pathlib import Path
 from typing import (
     Dict,
     Iterable,
@@ -14,12 +14,7 @@ from typing import (
 
 import trio
 
-from romt import base
-from romt import common
-from romt import dist
-from romt import error
-from romt import integrity
-from romt import signature
+from romt import base, common, dist, error, integrity, signature
 from romt.manifest import Manifest, Package
 
 description = """\
