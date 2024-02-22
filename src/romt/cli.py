@@ -3,6 +3,7 @@
 import argparse
 import importlib.metadata
 import sys
+from typing import List, Optional
 
 import romt.crate
 import romt.rustup
@@ -173,12 +174,12 @@ def make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
+def run(sys_args: Optional[List[str]] = None) -> int:
     parser = make_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(args=sys_args)
     if args.readme:
         readme()
-        return
+        return 0
     cmd = args.subparser_name
     try:
         if cmd is None:
@@ -199,10 +200,16 @@ def main() -> None:
 
     except error.Error as e:
         common.eprint(e)
-        sys.exit(1)
+        return 1
 
     except KeyboardInterrupt:
         common.eprint("Keyboard interrupt")
+
+    return 0
+
+
+def main() -> None:
+    sys.exit(run())
 
 
 if __name__ == "__main__":
