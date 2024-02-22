@@ -12,11 +12,19 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
-# Without this environment variable, importing `git` will cause failure
-# when the `git` command is not found.  We want to defer the probe for Git
-# until we know we need it (whenever we acquire a `git.Repo` instance).
-os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-import git
+# Using `try/except` here to prevent this lint warning caused by setting the
+# environment variable before subsequent imports::
+#   "E402 Module level import not at top of file".
+try:
+    # Without this environment variable, importing `git` will cause failure
+    # when the `git` command is not found.  We want to defer the probe for Git
+    # until we know we need it (whenever we acquire a `git.Repo` instance).
+    os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+    import git
+except ImportError:
+    # We're not actually trying to catch any exception; just dodging a linter
+    # warning.
+    raise
 import git.objects
 import git.remote
 import toml
