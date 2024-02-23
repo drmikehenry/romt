@@ -22,12 +22,30 @@ See ``{project_name} --readme`` for more details.
 """.format(project_name=project_name)
 
 
+# For Python 3.10+.
+# This fails on Python 3.8 and 3.9 for `poetry install` and `pip install`.
+# It works, however, for PyInstaller builds for Python 3.8+.
+def readme_from_importlib() -> str:
+    meta = importlib.metadata.metadata("romt")
+    text = meta["Description"] or ""
+    return text.strip()
+
+
+# Required on Python 3.8 and 3.9 for `poetry install`, `pip install`.
 def readme_from_pkg_resources() -> str:
     import email
     import textwrap
 
-    # This method works when the package is properly installed via "pip".
-    import pkg_resources
+    try:
+        # `pkg_resources` comes from `setuptools` which might not be installed.
+        # It is also deprecated. so we squelch warnings during import.
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            import pkg_resources
+    except ImportError:
+        return ""
 
     try:
         dist = pkg_resources.get_distribution(project_name)
@@ -44,24 +62,10 @@ def readme_from_pkg_resources() -> str:
     return desc
 
 
-def readme_from_file() -> str:
-    # This method works with PyInstaller.
-    import pkgutil
-
-    text = ""
-    try:
-        readme = pkgutil.get_data(project_name, "README.rst")
-        if readme is not None:
-            text = readme.decode("utf-8")
-    except FileNotFoundError:
-        text = ""
-    return text
-
-
 def readme() -> None:
-    desc = readme_from_pkg_resources()
+    desc = readme_from_importlib()
     if not desc:
-        desc = readme_from_file()
+        desc = readme_from_pkg_resources()
     if not desc:
         desc = "README.rst is not available."
     common.iprint(desc)
