@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import collections
 import copy
 from pathlib import Path

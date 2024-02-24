@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import functools
 import shutil
 from pathlib import Path
