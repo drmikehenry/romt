@@ -633,7 +633,7 @@ class Main(dist.DistMain):
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 tar_info.name = str(dest_path)
                 common.vprint(f"[unpack] {rel_path}")
-                tar_f.extract(tar_info)
+                tar_f.extract(tar_info, set_attrs=False)
                 extracted.add(rel_path)
 
         specs = self._detect_specs(extracted)
