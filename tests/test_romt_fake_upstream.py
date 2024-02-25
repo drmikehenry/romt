@@ -1,5 +1,7 @@
+import filecmp
 import hashlib
 import json
+import os
 import shutil
 import typing as T
 from pathlib import Path
@@ -35,6 +37,40 @@ def append_file_line(path: Path, line: str) -> None:
         f.write(line + "\n")
 
 
+def walk_files(root: Path) -> T.Generator[Path, None, None]:
+    for dirpath, dirnames, filenames in os.walk(root):
+        for name in filenames:
+            yield Path(dirpath) / name
+
+
+def walk_files_rel(root: Path) -> T.Generator[str, None, None]:
+    for p in walk_files(root):
+        yield str(p.relative_to(root))
+
+
+def assert_same_files(
+    left_root: Path,
+    left_files_rel: T.Iterable[str],
+    right_root: Path,
+    right_files_rel: T.Iterable[str],
+) -> None:
+    left = set(left_files_rel)
+    right = set(right_files_rel)
+    common = left & right
+    left_only = left - right
+    right_only = right - left
+
+    match, mismatch, errors = filecmp.cmpfiles(
+        left_root, right_root, common, shallow=False
+    )
+
+    print(f"{left_only=}")
+    print(f"{right_only=}")
+    print(f"{mismatch=}")
+    print(f"{errors=}")
+    assert not (left_only or right_only or mismatch or errors)
+
+
 def create_repo(repo_path: Path) -> git.Repo:
     mkdir_p(repo_path)
     repo = git.Repo.init(str(repo_path))
@@ -59,7 +95,9 @@ def repo_add_config(repo: git.Repo) -> None:
     repo.index.commit("add `config.json`")
 
 
-def make_entry(name: str, version: str, sha256sum: str) -> T.Dict[str, T.Any]:
+def make_crate_entry(
+    name: str, version: str, sha256sum: str
+) -> T.Dict[str, T.Any]:
     return dict(
         name=name,
         vers=version,
@@ -93,7 +131,7 @@ def add_crate(
     work_path = repo_work_path(repo)
     entry_path = work_path / prefix / name
     sha256sum = hashlib.sha256(crate_data).hexdigest()
-    entry = make_entry(name, version, sha256sum)
+    entry = make_crate_entry(name, version, sha256sum)
     append_file_line(entry_path, json.dumps(entry))
     repo.index.add(str(entry_path))
     repo.index.commit(f"add `{crate_path.name}`")
@@ -178,3 +216,28 @@ def test_crates(
 
     crate_must_run(offline_path, offline_args + ["init-import"])
     crate_must_run(offline_path, offline_args + ["import"])
+
+    upstream_crates_path = upstream_path / "crates"
+    upstream_files_rel = set(walk_files_rel(upstream_crates_path))
+
+    inet_crates_path = inet_path / "crates"
+    inet_files_rel = set(walk_files_rel(inet_crates_path))
+    inet_files_rel.remove("config.toml")
+
+    assert_same_files(
+        upstream_crates_path,
+        upstream_files_rel,
+        inet_crates_path,
+        inet_files_rel,
+    )
+
+    offline_crates_path = offline_path / "crates"
+    offline_files_rel = set(walk_files_rel(offline_crates_path))
+    offline_files_rel.remove("config.toml")
+
+    assert_same_files(
+        inet_crates_path,
+        inet_files_rel,
+        offline_crates_path,
+        offline_files_rel,
+    )
