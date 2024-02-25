@@ -124,6 +124,9 @@ Version 0.3.2
 
 - Support ``{prefix}`` and ``{lowerprefix}`` in ``crate --crates-url``.
 
+- Honor ``toolchain --no-signature`` for ``toolchain fixup`` (mainly for
+  testing).
+
 Version 0.3.1
 =============
 
