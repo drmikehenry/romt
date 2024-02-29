@@ -8,8 +8,14 @@ from pathlib import Path
 
 import git
 import pytest
+import toml
+
 import romt.cli
 import romt.crate
+
+
+def path_append_suffix(path: Path, suffix: str) -> Path:
+    return path.with_suffix(path.suffix + suffix)
 
 
 def rmtree(path: Path) -> None:
@@ -146,10 +152,49 @@ CRATE_VERSIONS = [
 ]
 
 
+def make_dist_file(root: Path, url: str) -> str:
+    prefix = "https://static.rust-lang.org/"
+    assert url.startswith(prefix)
+    path = root / url[len(prefix) :]
+    data = (path.name + "\n").encode()
+    write_file_bytes(path, data)
+    sha256sum = hashlib.sha256(data).hexdigest()
+    write_file_text(path_append_suffix(path, ".sha256"), sha256sum + "\n")
+    return sha256sum
+
+
+def make_dist(root: Path, manifest: T.Any) -> None:
+    if isinstance(manifest, dict):
+        url = manifest.get("url")
+        if url:
+            manifest["hash"] = make_dist_file(root, url)
+        xz_url = manifest.get("xz_url")
+        if xz_url:
+            manifest["xz_hash"] = make_dist_file(root, xz_url)
+        for value in manifest.values():
+            make_dist(root, value)
+    elif isinstance(manifest, list):
+        for value in manifest:
+            make_dist(root, value)
+
+
+def write_manifest(manifest_path: Path, manifest_bytes: bytes) -> None:
+    manifest_path.write_bytes(manifest_bytes)
+    sha256sum = hashlib.sha256(manifest_bytes).hexdigest()
+    path_append_suffix(manifest_path, ".sha256").write_text(sha256sum + "\n")
+
+
 @pytest.fixture
-def upstream_path() -> Path:
+def tests_path(request: pytest.FixtureRequest) -> Path:
+    return Path(request.path).parent
+
+
+@pytest.fixture
+def upstream_path(tests_path: Path) -> Path:
     path = Path("fake") / "upstream"
     rmtree(path)
+
+    # Setup upstream crates.
     crates_path = path / "crates"
     mkdir_p(crates_path)
     repo_path = path / "git" / "crates.io-index"
@@ -157,6 +202,16 @@ def upstream_path() -> Path:
     repo_add_config(repo)
     for name, version in CRATE_VERSIONS:
         add_crate(repo, crates_path, name, version)
+
+    # Setup upstream toolchain.
+    manifest = toml.load(tests_path / "channel-rust-1.76.0.toml")
+    make_dist(path, manifest)
+    manifest_bytes = toml.dumps(manifest).encode()
+    dist_path = path / "dist"
+    for version in ["1.76.0", "stable"]:
+        for p in [dist_path, dist_path / "2024-02-08"]:
+            write_manifest(p / f"channel-rust-{version}.toml", manifest_bytes)
+
     return path
 
 
@@ -241,3 +296,12 @@ def test_crates(
         offline_crates_path,
         offline_files_rel,
     )
+
+
+def test_toolchain(
+    upstream_path: Path,
+    inet_path: Path,
+    offline_path: Path,
+) -> None:
+    # TODO: write the test.
+    assert False
