@@ -370,6 +370,7 @@ def test_toolchain(
     upstream_toolchains_path = upstream_path / "dist"
     upstream_files_rel = set(walk_files_rel(upstream_toolchains_path))
 
+    inet_toolchains_path = inet_path / "dist"
     archive_path = inet_path / "toolchain.tar.gz"
     inet_args = [
         "--url",
@@ -379,23 +380,23 @@ def test_toolchain(
         "--no-signature",
     ]
 
+    artifact_names = set(toolchain_artifact_names_1_76_0)
+
     toolchain_must_run(
         inet_path,
         inet_args + ["-s", "1.76.0", "-t", "linux", "download", "pack"],
     )
 
-    inet_toolchains_path = inet_path / "dist"
     inet_files_rel = set(walk_files_rel(inet_toolchains_path))
 
     assert_same_files(
         upstream_toolchains_path,
-        rel_paths_with_base_names(
-            upstream_files_rel, toolchain_artifact_names_1_76_0
-        ),
+        rel_paths_with_base_names(upstream_files_rel, artifact_names),
         inet_toolchains_path,
         inet_files_rel,
     )
 
+    offline_toolchains_path = offline_path / "dist"
     offline_args = [
         "--archive",
         f"{archive_path}",
@@ -407,7 +408,44 @@ def test_toolchain(
         offline_args + ["unpack"],
     )
 
-    offline_toolchains_path = offline_path / "dist"
+    offline_files_rel = set(walk_files_rel(offline_toolchains_path))
+
+    assert_same_files(
+        inet_toolchains_path,
+        inet_files_rel,
+        offline_toolchains_path,
+        offline_files_rel,
+    )
+
+    # Now include a `--cross` for a single target.
+    cross_target = "x86_64-unknown-linux-musl"
+    toolchain_must_run(
+        inet_path,
+        inet_args
+        + ["-s", "1.76.0", "-t", cross_target, "--cross", "download", "pack"],
+    )
+
+    artifact_names.update(
+        [
+            "rust-std-1.76.0-x86_64-unknown-linux-musl.tar.xz",
+            "rust-std-1.76.0-x86_64-unknown-linux-musl.tar.xz.sha256",
+        ]
+    )
+
+    inet_files_rel = set(walk_files_rel(inet_toolchains_path))
+
+    assert_same_files(
+        upstream_toolchains_path,
+        rel_paths_with_base_names(upstream_files_rel, artifact_names),
+        inet_toolchains_path,
+        inet_files_rel,
+    )
+
+    toolchain_must_run(
+        offline_path,
+        offline_args + ["unpack"],
+    )
+
     offline_files_rel = set(walk_files_rel(offline_toolchains_path))
 
     assert_same_files(
