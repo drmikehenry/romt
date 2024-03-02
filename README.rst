@@ -838,14 +838,6 @@ For example, the most recent on-disk ``stable`` release can be shown via:
 With example output::
 
   stable-2024-02-08(1.76.0)    targets[10/94]   packages[34/425]
-    mips-unknown-linux-gnu                        minimal
-    mips64-unknown-linux-gnuabi64                 minimal
-    mips64el-unknown-linux-gnuabi64               minimal
-    mipsel-unknown-linux-gnu                      minimal
-    mipsisa32r6-unknown-linux-gnu                 minimal
-    mipsisa32r6el-unknown-linux-gnu               minimal
-    mipsisa64r6-unknown-linux-gnuabi64            minimal
-    mipsisa64r6el-unknown-linux-gnuabi64          minimal
     x86_64-unknown-linux-gnu                      native-target
     x86_64-unknown-linux-musl                     cross-target
 
@@ -870,7 +862,31 @@ writing the minimal target ``mips-unknown-linux-gnu`` has no components of its
 own in toolchain 1.76.0, but it shares the component ``rust-docs`` with the more
 common target ``x86_64-unknown-linux-gnu``; therefore, downloading the full
 toolchain for ``x86_64-unknown-linux-gnu`` will cause ``mips-unknown-linux-gnu``
-to show up as a minimal toolchain.
+to be present as a minimal toolchain.
+
+Because most ``minimal`` targets are present only by coincidence and not useful,
+listing them is suppressed by default.  Use ``--verbose`` to include them,
+e.g.::
+
+.. code-block:: sh
+
+  romt toolchain list --select 'stable-latest' --verbose
+
+With example output::
+
+  List: stable-2024-02-08
+  [verify] dist/2024-02-08/channel-rust-stable.toml
+  stable-2024-02-08(1.76.0)    targets[10/94]   packages[34/425]
+    mips-unknown-linux-gnu                        minimal
+    mips64-unknown-linux-gnuabi64                 minimal
+    mips64el-unknown-linux-gnuabi64               minimal
+    mipsel-unknown-linux-gnu                      minimal
+    mipsisa32r6-unknown-linux-gnu                 minimal
+    mipsisa32r6el-unknown-linux-gnu               minimal
+    mipsisa64r6-unknown-linux-gnuabi64            minimal
+    mipsisa64r6el-unknown-linux-gnuabi64          minimal
+    x86_64-unknown-linux-gnu                      native-target
+    x86_64-unknown-linux-musl                     cross-target
 
 To suppress information about targets, use ``--quiet``:
 
@@ -892,30 +908,10 @@ given channel:
 With example output::
 
   nightly-2024-02-14(1.78.0)   targets[9/94]    packages[54/486]
-    mips-unknown-linux-gnu                        minimal
-    mips64-unknown-linux-gnuabi64                 minimal
-    mips64el-unknown-linux-gnuabi64               minimal
-    mipsel-unknown-linux-gnu                      minimal
-    mipsisa32r6-unknown-linux-gnu                 minimal
-    mipsisa32r6el-unknown-linux-gnu               minimal
-    mipsisa64r6-unknown-linux-gnuabi64            minimal
-    mipsisa64r6el-unknown-linux-gnuabi64          minimal
     x86_64-unknown-linux-gnu                      native-target
   nightly-2023-10-31(1.75.0)   targets[9/95]    packages[54/488]
-    mips-unknown-linux-gnu                        minimal
-    mips64-unknown-linux-gnuabi64                 minimal
-    mips64el-unknown-linux-gnuabi64               minimal
-    mipsel-unknown-linux-gnu                      minimal
-    mipsisa32r6-unknown-linux-gnu                 minimal
-    mipsisa32r6el-unknown-linux-gnu               minimal
-    mipsisa64r6-unknown-linux-gnuabi64            minimal
-    mipsisa64r6el-unknown-linux-gnuabi64          minimal
     x86_64-unknown-linux-gnu                      native-target
   nightly-2023-07-04(1.72.0)   targets[5/96]    packages[53/529]
-    mipsisa32r6-unknown-linux-gnu                 minimal
-    mipsisa32r6el-unknown-linux-gnu               minimal
-    mipsisa64r6-unknown-linux-gnuabi64            minimal
-    mipsisa64r6el-unknown-linux-gnuabi64          minimal
     x86_64-unknown-linux-gnu                      native-target
 
 After toolchain importation, it may be useful to list toolchains for each

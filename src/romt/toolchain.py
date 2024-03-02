@@ -520,7 +520,11 @@ class Main(dist.DistMain):
                     )
                 )
                 for target, target_type in target_types.items():
-                    common.iprint(f"  {target:45} {target_type}")
+                    msg = f"  {target:45} {target_type}"
+                    if target_type == "minimal":
+                        common.vprint(msg)
+                    else:
+                        common.iprint(msg)
             else:
                 common.eprint(manifest.ident)
 
