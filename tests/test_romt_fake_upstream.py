@@ -245,10 +245,12 @@ def crate_must_run(root_path: Path, args: T.List[str]) -> None:
 def test_crates(
     upstream_path: Path, inet_path: Path, offline_path: Path
 ) -> None:
-    rmtree(inet_path)
+    upstream_crates_path = upstream_path / "crates"
+    upstream_files_rel = set(walk_files_rel(upstream_crates_path))
+
     crates_template = "crates/{lowerprefix}/{crate}/{crate}-{version}.crate"
     archive_path = inet_path / "crates.tar.gz"
-    upstream_args = [
+    inet_args = [
         "--crates-url",
         f"{upstream_path}/{crates_template}",
         "--index-url",
@@ -257,23 +259,8 @@ def test_crates(
         f"{archive_path}",
     ]
 
-    offline_args = [
-        "--crates-url",
-        f"{inet_path}/{crates_template}",
-        "--index-url",
-        f"{inet_path}/git/crates.io-index",
-        "--archive",
-        f"{archive_path}",
-    ]
-
-    crate_must_run(inet_path, upstream_args + ["init"])
-    crate_must_run(inet_path, upstream_args + ["export"])
-
-    crate_must_run(offline_path, offline_args + ["init-import"])
-    crate_must_run(offline_path, offline_args + ["import"])
-
-    upstream_crates_path = upstream_path / "crates"
-    upstream_files_rel = set(walk_files_rel(upstream_crates_path))
+    crate_must_run(inet_path, inet_args + ["init"])
+    crate_must_run(inet_path, inet_args + ["export"])
 
     inet_crates_path = inet_path / "crates"
     inet_files_rel = set(walk_files_rel(inet_crates_path))
@@ -285,6 +272,18 @@ def test_crates(
         inet_crates_path,
         inet_files_rel,
     )
+
+    offline_args = [
+        "--crates-url",
+        f"{inet_path}/{crates_template}",
+        "--index-url",
+        f"{inet_path}/git/crates.io-index",
+        "--archive",
+        f"{archive_path}",
+    ]
+
+    crate_must_run(offline_path, offline_args + ["init-import"])
+    crate_must_run(offline_path, offline_args + ["import"])
 
     offline_crates_path = offline_path / "crates"
     offline_files_rel = set(walk_files_rel(offline_crates_path))
@@ -298,10 +297,122 @@ def test_crates(
     )
 
 
+def toolchain_must_run(root_path: Path, args: T.List[str]) -> None:
+    toolchain_args = [
+        "toolchain",
+        "--dest",
+        f"{root_path}/dist",
+    ]
+    assert romt.cli.run(toolchain_args + args) == 0
+
+
+toolchain_artifact_names_1_76_0 = set(
+    """
+
+    cargo-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    cargo-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    channel-rust-1.76.0.toml
+    channel-rust-1.76.0.toml
+    channel-rust-1.76.0.toml.sha256
+    channel-rust-1.76.0.toml.sha256
+    channel-rust-stable.toml
+    channel-rust-stable.toml
+    channel-rust-stable.toml.sha256
+    channel-rust-stable.toml.sha256
+    clippy-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    clippy-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    llvm-tools-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    llvm-tools-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    reproducible-artifacts-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    reproducible-artifacts-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rls-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rls-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rust-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rust-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rust-analysis-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rust-analysis-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rust-analyzer-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rust-analyzer-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rust-docs-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rust-docs-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rust-src-1.76.0.tar.xz
+    rust-src-1.76.0.tar.xz.sha256
+    rust-std-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rust-std-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rustc-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rustc-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rustc-dev-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rustc-dev-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rustc-docs-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rustc-docs-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+    rustfmt-1.76.0-x86_64-unknown-linux-gnu.tar.xz
+    rustfmt-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
+
+
+""".split()
+)
+
+
+def rel_paths_with_base_names(
+    rel_paths: T.Iterable[str], base_names: T.Iterable[str]
+) -> T.Generator[str, None, None]:
+    names = set(base_names)
+    for p in rel_paths:
+        if os.path.basename(p) in names:
+            yield p
+
+
 def test_toolchain(
     upstream_path: Path,
     inet_path: Path,
     offline_path: Path,
 ) -> None:
-    # TODO: write the test.
-    assert False
+    upstream_toolchains_path = upstream_path / "dist"
+    upstream_files_rel = set(walk_files_rel(upstream_toolchains_path))
+
+    archive_path = inet_path / "toolchain.tar.gz"
+    inet_args = [
+        "--url",
+        str(upstream_toolchains_path),
+        "--archive",
+        f"{archive_path}",
+        "--no-signature",
+    ]
+
+    toolchain_must_run(
+        inet_path,
+        inet_args + ["-s", "1.76.0", "-t", "linux", "download", "pack"],
+    )
+
+    inet_toolchains_path = inet_path / "dist"
+    inet_files_rel = set(walk_files_rel(inet_toolchains_path))
+
+    assert_same_files(
+        upstream_toolchains_path,
+        rel_paths_with_base_names(
+            upstream_files_rel, toolchain_artifact_names_1_76_0
+        ),
+        inet_toolchains_path,
+        inet_files_rel,
+    )
+
+    offline_args = [
+        "--archive",
+        f"{archive_path}",
+        "--no-signature",
+    ]
+
+    toolchain_must_run(
+        offline_path,
+        offline_args + ["unpack"],
+    )
+
+    offline_toolchains_path = offline_path / "dist"
+    offline_files_rel = set(walk_files_rel(offline_toolchains_path))
+
+    assert_same_files(
+        inet_toolchains_path,
+        inet_files_rel,
+        offline_toolchains_path,
+        offline_files_rel,
+    )
