@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import shutil
+import textwrap
 import typing as T
 from pathlib import Path
 
@@ -152,15 +153,25 @@ CRATE_VERSIONS = [
 ]
 
 
-def make_dist_file(root: Path, url: str) -> str:
-    prefix = "https://static.rust-lang.org/"
-    assert url.startswith(prefix)
-    path = root / url[len(prefix) :]
-    data = (path.name + "\n").encode()
+# Create `path` (containing `data`) and `path.sha256`, returning `sha256sum`.
+def make_sha256_file_pair(path: Path, data: bytes) -> str:
     write_file_bytes(path, data)
     sha256sum = hashlib.sha256(data).hexdigest()
     write_file_text(path_append_suffix(path, ".sha256"), sha256sum + "\n")
     return sha256sum
+
+
+# Create `path` and `path.sha256`, returning `sha256sum`.
+def make_fake_sha256_file_pair(path: Path) -> str:
+    data = (path.name + "\n").encode()
+    return make_sha256_file_pair(path, data)
+
+
+def make_dist_file(root: Path, url: str) -> str:
+    prefix = "https://static.rust-lang.org/"
+    assert url.startswith(prefix)
+    path = root / url[len(prefix) :]
+    return make_fake_sha256_file_pair(path)
 
 
 def make_dist(root: Path, manifest: T.Any) -> None:
@@ -176,12 +187,6 @@ def make_dist(root: Path, manifest: T.Any) -> None:
     elif isinstance(manifest, list):
         for value in manifest:
             make_dist(root, value)
-
-
-def write_manifest(manifest_path: Path, manifest_bytes: bytes) -> None:
-    manifest_path.write_bytes(manifest_bytes)
-    sha256sum = hashlib.sha256(manifest_bytes).hexdigest()
-    path_append_suffix(manifest_path, ".sha256").write_text(sha256sum + "\n")
 
 
 @pytest.fixture
@@ -210,7 +215,29 @@ def upstream_path(tests_path: Path) -> Path:
     dist_path = path / "dist"
     for version in ["1.76.0", "stable"]:
         for p in [dist_path, dist_path / "2024-02-08"]:
-            write_manifest(p / f"channel-rust-{version}.toml", manifest_bytes)
+            make_sha256_file_pair(
+                p / f"channel-rust-{version}.toml", manifest_bytes
+            )
+
+    # Setup upstream `rustup`.
+    rustup_path = path / "rustup"
+    rustup_toml_path = rustup_path / "release-stable.toml"
+    write_file_text(
+        rustup_toml_path,
+        textwrap.dedent(
+            """\
+            schema-version = "1"
+            version = "1.26.0"
+            """
+        ),
+    )
+
+    target = "x86_64-unknown-linux-gnu"
+    version = "1.26.0"
+    make_fake_sha256_file_pair(
+        rustup_path / "archive" / version / target / "rustup-init"
+    )
+    make_fake_sha256_file_pair(rustup_path / "dist" / target / "rustup-init")
 
     return path
 
@@ -367,14 +394,14 @@ def test_toolchain(
     inet_path: Path,
     offline_path: Path,
 ) -> None:
-    upstream_toolchains_path = upstream_path / "dist"
-    upstream_files_rel = set(walk_files_rel(upstream_toolchains_path))
+    upstream_dist_path = upstream_path / "dist"
+    upstream_files_rel = set(walk_files_rel(upstream_dist_path))
 
-    inet_toolchains_path = inet_path / "dist"
+    inet_dist_path = inet_path / "dist"
     archive_path = inet_path / "toolchain.tar.gz"
     inet_args = [
         "--url",
-        str(upstream_toolchains_path),
+        str(upstream_dist_path),
         "--archive",
         f"{archive_path}",
         "--no-signature",
@@ -387,16 +414,16 @@ def test_toolchain(
         inet_args + ["-s", "1.76.0", "-t", "linux", "download", "pack"],
     )
 
-    inet_files_rel = set(walk_files_rel(inet_toolchains_path))
+    inet_files_rel = set(walk_files_rel(inet_dist_path))
 
     assert_same_files(
-        upstream_toolchains_path,
+        upstream_dist_path,
         rel_paths_with_base_names(upstream_files_rel, artifact_names),
-        inet_toolchains_path,
+        inet_dist_path,
         inet_files_rel,
     )
 
-    offline_toolchains_path = offline_path / "dist"
+    offline_dist_path = offline_path / "dist"
     offline_args = [
         "--archive",
         f"{archive_path}",
@@ -408,12 +435,12 @@ def test_toolchain(
         offline_args + ["unpack"],
     )
 
-    offline_files_rel = set(walk_files_rel(offline_toolchains_path))
+    offline_files_rel = set(walk_files_rel(offline_dist_path))
 
     assert_same_files(
-        inet_toolchains_path,
+        inet_dist_path,
         inet_files_rel,
-        offline_toolchains_path,
+        offline_dist_path,
         offline_files_rel,
     )
 
@@ -432,12 +459,12 @@ def test_toolchain(
         ]
     )
 
-    inet_files_rel = set(walk_files_rel(inet_toolchains_path))
+    inet_files_rel = set(walk_files_rel(inet_dist_path))
 
     assert_same_files(
-        upstream_toolchains_path,
+        upstream_dist_path,
         rel_paths_with_base_names(upstream_files_rel, artifact_names),
-        inet_toolchains_path,
+        inet_dist_path,
         inet_files_rel,
     )
 
@@ -446,11 +473,72 @@ def test_toolchain(
         offline_args + ["unpack"],
     )
 
-    offline_files_rel = set(walk_files_rel(offline_toolchains_path))
+    offline_files_rel = set(walk_files_rel(offline_dist_path))
 
     assert_same_files(
-        inet_toolchains_path,
+        inet_dist_path,
         inet_files_rel,
-        offline_toolchains_path,
+        offline_dist_path,
+        offline_files_rel,
+    )
+
+
+def rustup_must_run(root_path: Path, args: T.List[str]) -> None:
+    toolchain_args = [
+        "rustup",
+        "--dest",
+        f"{root_path}/rustup",
+    ]
+    assert romt.cli.run(toolchain_args + args) == 0
+
+
+def test_rustup(
+    upstream_path: Path,
+    inet_path: Path,
+    offline_path: Path,
+) -> None:
+    upstream_rustup_path = upstream_path / "rustup"
+    upstream_files_rel = set(walk_files_rel(upstream_rustup_path))
+
+    inet_rustup_path = inet_path / "rustup"
+    archive_path = inet_path / "rustup.tar.gz"
+    inet_args = [
+        "--url",
+        str(upstream_rustup_path),
+        "--archive",
+        f"{archive_path}",
+    ]
+
+    rustup_must_run(
+        inet_path,
+        inet_args + ["-s", "stable", "-t", "linux", "download", "pack"],
+    )
+
+    inet_files_rel = set(walk_files_rel(inet_rustup_path))
+
+    assert_same_files(
+        upstream_rustup_path,
+        upstream_files_rel,
+        inet_rustup_path,
+        inet_files_rel,
+    )
+
+    offline_rustup_path = offline_path / "rustup"
+    offline_args = [
+        "--archive",
+        f"{archive_path}",
+    ]
+
+    rustup_must_run(
+        offline_path,
+        offline_args + ["unpack"],
+    )
+
+    offline_files_rel = set(walk_files_rel(offline_rustup_path))
+
+    assert_same_files(
+        inet_rustup_path,
+        inet_files_rel,
+        offline_rustup_path,
         offline_files_rel,
     )
