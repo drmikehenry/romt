@@ -4,6 +4,7 @@
 /.coverage
 /.coverage.py*
 /build/
+/dist/
 /envs/
 /fake/
 /htmlcov/

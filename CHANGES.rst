@@ -2,6 +2,17 @@
 History
 *******
 
+Version 0.5.1
+=============
+
+- Remove extraneous artifacts from the built ``romt-x.y.z-*.whl`` file.  In the
+  absence of a specified ``format`` option, these should have been present only
+  in the source distribution file ``romt-x.y.z.tar.gz`` according to the Poetry
+  documentation (https://python-poetry.org/docs/pyproject/#include-and-exclude).
+  Now explicitly restrict these included files using ``format = "sdist"``. In
+  addition, include ``make-exec-*`` and ``romt-wrapper.py`` into the source
+  distribution file to allow building the ``romt`` executable.
+
 Version 0.5.0
 =============
 

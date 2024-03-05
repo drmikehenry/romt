@@ -1,7 +1,16 @@
 [tool.poetry]
 name = "romt"
-version = "0.5.0"
-include = ["README.rst", "LICENSE.rst", "CHANGES.rst", "tests/*.py"]
+version = "0.5.1"
+include = [
+  { path = "CHANGES.rst", format="sdist" },
+  { path = "LICENSE.rst", format="sdist" },
+  { path = "README.rst", format="sdist" },
+  { path = "maintainer.rst", format="sdist" },
+  { path = "make-exec-darwin.sh", format="sdist" },
+  { path = "make-exec-linux.sh", format="sdist" },
+  { path = "make-exec-windows.bat", format="sdist" },
+  { path = "romt-wrapper.py", format="sdist" },
+]
 description = """\
   Romt (Rust Offline Mirror Tool) enables mirroring of Rust \
   programming language tools and crates for use in an offline context.\
