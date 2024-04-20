@@ -9,7 +9,7 @@ an offline context.  Instructions and tooling are provided for:
 
   - Toolchains (Rustc, Cargo, libraries, etc.)
   - Rustup (toolchain multiplexer)
-  - Crates.io (community-supplied Crates)
+  - Crates.io (community-supplied Crates) with "sparse" index support.
 
 - Incremental artifact downloading (with a configurable number of simultaneous
   download jobs).
@@ -1805,6 +1805,13 @@ below, configure the index repository via:
 
   romt crate config --server-url <SERVER_URL>
 
+``nginx`` with Perl support and ``fcgiwrap`` are required.  On Ubuntu, these may
+be installed via:
+
+.. code-block:: sh
+
+  apt install nginx-extras fcgiwrap
+
 Below is a sample nginx configuration.
 
 Place the following content into ``/etc/nginx/sites-available/rust``.  Make
@@ -1838,6 +1845,21 @@ directed by the ``TODO`` comments::
       fastcgi_param PATH_INFO           $1;
     }
 
+    # Support "sparse" `crates.io-index` protocol.
+    location ~ /crates-index/(.*) {
+
+      # TODO: Change to absolute path to mirror/git directory:
+      fastcgi_param CRATE_INDEX_ROOT    /ABSOLUTE/PATH/TO/mirror/git/crates.io-index;
+
+      include       fastcgi_params;
+      fastcgi_pass  unix:/var/run/fcgiwrap.socket;
+      # TODO: Adjust path to `cgi-crates-index` CGI script as needed:
+      fastcgi_param SCRIPT_FILENAME     /usr/lib/cgi-bin/cgi-crates-index;
+      fastcgi_param GIT_HTTP_EXPORT_ALL "";
+      fastcgi_param PATH_INFO           $1;
+    }
+
+
     # Rewrite URLs like /crates/{crate}/{crate}-{version}.crate to use
     # a prefix based on the crate name.  Special cases for crate names
     # with 1, 2, 3, and 4-or-more characters:
@@ -1856,6 +1878,76 @@ directed by the ``TODO`` comments::
     # rewrite "^/crates/([^/]{2})([^/]{2})([^/]*)/([^/]+)$"  "/crates/$1/$2/$1$2$3/$4" last;
 
   }
+
+Serving the ``crates.io-index`` with the "sparse" protocol requires the creation
+of the following ``cgi-crates-index`` CGI script.  On Ubuntu, such scripts live
+in ``/usr/lib/cgi-bin``; e.g.:
+
+- Create ``/usr/lib/cgi-bin`` directory if necessary:
+
+.. code-block:: sh
+
+  mkdir -p /usr/lib/cgi-bin
+
+- Create ``/usr/lib/cgi-bin/cgi-crates-index`` with contents:
+
+  .. code-block:: perl
+
+    #!/usr/bin/perl
+
+    use strict;
+    use warnings;
+
+    sub send_content {
+        my ($content_type, $body) = @_;
+        my $content_length = length($body);
+        print "Content-Type: $content_type\r\n";
+        print "Content-Length: $content_length\r\n";
+        print "\r\n";
+        print "$body"
+    }
+
+    sub send_404 {
+        print "Status: 404 Not Found\r\n";
+        send_content('text/html', <<'END');
+    <html>
+    <head><title>404 Not Found</title></head>
+    <body>
+    <h1>404 Not Found</h1>
+    </body>
+    </html>
+    END
+    }
+
+    my $repo = $ENV{CRATE_INDEX_ROOT};
+    my $path_info = $ENV{PATH_INFO} || "config.json";
+
+    my $pipe;
+    if (open($pipe, '-|', "git -C $repo show master:$path_info")) {
+        my $body;
+        {
+            local $/; # Slurp mode.
+            $body = <$pipe>;
+        }
+        if (close($pipe)) {
+            send_content('application/octet-stream', $body);
+        } else {
+            send_404();
+        }
+    } else {
+        send_404();
+    }
+
+  Note that the user running the CGI script must own the ``crates.io-index``
+  tree or else Git may throw errors such as::
+
+    fatal: detected dubious ownership in repository at '/.../crates.io-index'
+
+- Make ``/usr/lib/cgi-bin/cgi-crates-index`` executable:
+
+  .. code-block:: sh
+
+    chmod +x /usr/lib/cgi-bin/cgi-crates-index
 
 Serving crates with lowercase prefixes requires Perl support in nginx (on
 Ubuntu, this requires the package ``nginx-extras`` instead of ``nginx-full``);

@@ -13,6 +13,9 @@ Version 0.6.0
   adjustments to the ``.cargo/config.toml`` file; see the ``README.rst`` file
   for details.
 
+- Document how to use ``nxingx`` to serve the "sparse" ``crates.io-index``
+  protocol.
+
 Version 0.5.1
 =============
 
