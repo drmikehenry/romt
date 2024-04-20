@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "romt"
-version = "0.5.1"
+version = "0.6.0"
 include = [
   { path = "CHANGES.rst", format="sdist" },
   { path = "LICENSE.rst", format="sdist" },
@@ -9,6 +9,8 @@ include = [
   { path = "make-exec-darwin.sh", format="sdist" },
   { path = "make-exec-linux.sh", format="sdist" },
   { path = "make-exec-windows.bat", format="sdist" },
+  { path = "poetry.lock", format="sdist" },
+  { path = "requirements.txt", format="sdist" },
   { path = "romt-wrapper.py", format="sdist" },
 ]
 description = """\

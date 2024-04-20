@@ -2,6 +2,13 @@
 History
 *******
 
+Version 0.6.0
+=============
+
+- Include ``poetry.lock`` and ``requirements.txt`` in the generated
+  ``romt-x.y.z.tar.gz`` source archive.  This allows explicit use of locked
+  versions for all dependencies when installing from PyPI.
+
 Version 0.5.1
 =============
 

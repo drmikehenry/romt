@@ -87,47 +87,61 @@ https://github.com/drmikehenry/romt/releases
 Option 2: Install from Python Package Index
 -------------------------------------------
 
-Romt is also available in the Python Package Index (PyPI).  For machines with
-direct Internet access, installation is straightforward; for machines on a
-disconnected network, more steps are required.
+Romt is also available in the Python Package Index (PyPI).
 
-First ensure that the ``PATH`` contains the directory that holds installed
-Python packages::
+- Download ``romt`` source and all dependencies on a host with direct Internet
+  access:
 
-    # For Linux:
-    ~/.local/bin
-
-    # For Windows with Python version X.Y:
-    %APPDATA%\Python\PythonXY\Scripts
-
-Next, choose installation method based on access to the Internet:
-
-- With direct Internet access:
-
-  - Install directly from PyPI:
-
-    .. code-block:: sh
-
-      pip install --user romt
-
-- On a disconnected Network:
-
-  - Download ``romt`` with dependencies (from Internet-connected machine):
+  - Prepare ``romt`` download area:
 
     .. code-block:: sh
 
       mkdir romt
       cd romt
-      pip download romt
 
-  - Transfer the ``romt`` directory to a machine on the disconnected network.
-
-  - Install from the ``romt`` directory:
+  - Download poetry and dependencies:
 
     .. code-block:: sh
 
-      cd romt
-      pip install --user --no-index --find-links . romt
+      pip download poetry
+
+  - Download the ``romt`` source:
+
+    .. code-block:: sh
+
+      pip download --no-binary :all: --no-deps romt
+
+  - Unpack the ``romt`` source tarball ``romt-*.tar.gz``:
+
+    .. code-block:: sh
+
+      # Example for Linux:
+      tar -zxf romt-*.tar.gz
+
+  - Download the dependencies from ``requirements.txt``:
+
+    .. code-block:: sh
+
+      pip download -r romt-*/requirements.txt
+
+- If installing to an offline host, transfer the entire ``romt/`` download area
+  to that host.
+
+- Ensure that the ``PATH`` contains the directory that holds installed Python
+  packages::
+
+      # For Linux:
+      ~/.local/bin
+
+      # For Windows with Python version X.Y:
+      %APPDATA%\Python\PythonXY\Scripts
+
+- Install ``romt`` from the current directory of sources (ensuring the current
+  working directory is the ``romt/`` download area):
+
+  .. code-block:: sh
+
+    pip install --user --no-index --find-links . romt
 
 Option 3: Work with source
 --------------------------
@@ -137,6 +151,13 @@ environment.
 
 - Install Poetry globally as described in the documentation:
   https://python-poetry.org/docs/#installation
+
+  Include the ``poetry-plugin-export`` plugin as well.  Assuming ``pipx`` was
+  used for installation of poetry itself, this is done via::
+
+    pipx inject poetry poetry-plugin-export
+
+  This plugin is needed for generating a ``requirements.txt`` file.
 
 - Clone source:
 

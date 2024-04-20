@@ -16,11 +16,17 @@ echo "Release version: $version"
 echo "Cleanup directories..."
 rm -rf dist build
 
-echo "Make Linux executable..."
-./make-exec-linux.sh || die "Could not build for Linux"
+echo "Install all dependencies..."
+poetry install || die "Failed to install dependencies"
+
+echo "Create requirements file..."
+poetry export -o requirements.txt || die "Failed to create requirements file"
 
 echo "Build egg and wheel..."
 poetry build || die "Failed to build egg/wheel"
+
+echo "Make Linux executable..."
+./make-exec-linux.sh || die "Could not build for Linux"
 
 echo "twine check..."
 twine check dist/romt-"$version"* || die "twine check failed"
