@@ -455,20 +455,35 @@ localhost using either Quick-start server configuration above.
     rustup component add rust-src
 
 - Create the text file ``~/.cargo/config.toml``
-  (``%USERPROFILE%\.cargo\config.toml`` on Windows) with the following content::
+  (``%USERPROFILE%\.cargo\config.toml`` on Windows) to use ``romt serve``. With
+  a Rust toolchain from 2022-06-20 or later, the "sparse" protocol may be used.
+  This is significantly faster than the older Git-based method.
 
-    [source.crates-io]
-    registry = 'http://localhost:8000/git/crates.io-index'
+  - For the sparse index method, use the following contents for the
+    ``config.toml`` file::
 
-    # Disable cert revocation checking (necessary only on Windows):
-    [http]
-    check-revoke = false
+      [source.crates-io]
+      registry = 'sparse+http://localhost:8000/crates-index/'
 
-    # For greatly improved performance, have Cargo use the Git command-line
-    # client to acquire `crates.io-index` repository. See
-    # https://github.com/rust-lang/cargo/issues/9167 for details.
-    [net]
-    git-fetch-with-cli = true
+      # Disable cert revocation checking (necessary only on Windows):
+      [http]
+      check-revoke = false
+
+  - For the older Git-based index method, use the following contents for the
+    ``config.toml`` file::
+
+      [source.crates-io]
+      registry = 'http://localhost:8000/git/crates.io-index'
+
+      # Disable cert revocation checking (necessary only on Windows):
+      [http]
+      check-revoke = false
+
+      # For greatly improved performance, have Cargo use the Git command-line
+      # client to acquire `crates.io-index` repository. See
+      # https://github.com/rust-lang/cargo/issues/9167 for details.
+      [net]
+      git-fetch-with-cli = true
 
 - Create a sample project to demonstrate crate usage:
 
@@ -477,10 +492,11 @@ localhost using either Quick-start server configuration above.
     cargo new rand_test
     cd rand_test
 
-- Append the following line to ``Cargo.toml`` (just below the
-  ``[dependencies]`` line)::
+- Add the ``rand`` crate to the build:
 
-    rand = ""
+  .. code-block:: sh
+
+    cargo add rand
 
 - Fetch ``rand`` and its dependencies::
 

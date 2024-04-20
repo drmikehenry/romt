@@ -9,6 +9,10 @@ Version 0.6.0
   ``romt-x.y.z.tar.gz`` source archive.  This allows explicit use of locked
   versions for all dependencies when installing from PyPI.
 
+- Extend ``romt serve`` to support the "sparse" index protocol.  This requires
+  adjustments to the ``.cargo/config.toml`` file; see the ``README.rst`` file
+  for details.
+
 Version 0.5.1
 =============
 

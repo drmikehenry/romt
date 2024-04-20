@@ -1,7 +1,9 @@
 import argparse
+import http
 import http.server
 import os
 from pathlib import Path
+import subprocess
 from typing import Optional
 
 import romt.crate
@@ -108,13 +110,37 @@ class Handler(http.server.CGIHTTPRequestHandler):
             common.iprint(f"Rewrite URL: {self.path} -> {path}")
             self.path = path
 
+    def _git_show(self, path: str) -> bytes:
+        body = subprocess.check_output(
+            ["git", "-C", "git/crates.io-index", "show", f"master:{path}"]
+        )
+        return body
+
+    def _handle_sparse_index(self, *, with_body: bool) -> bool:
+        prefix = "/crates-index/"
+        if not self.path.startswith(prefix):
+            return False
+        try:
+            body = self._git_show(self.path[len(prefix) :])
+        except subprocess.CalledProcessError:
+            self.send_error(http.HTTPStatus.NOT_FOUND, "File not found")
+            return True
+        self.send_response(http.HTTPStatus.OK)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+
+        if with_body:
+            self.wfile.write(body)
+        return True
+
     def do_get(self) -> None:
         self._rewrite_path()
-        super().do_GET()
+        self._handle_sparse_index(with_body=True) or super().do_GET()
 
     def do_head(self) -> None:
         self._rewrite_path()
-        super().do_HEAD()
+        self._handle_sparse_index(with_body=False) or super().do_HEAD()
 
     def do_post(self) -> None:
         self._rewrite_path()
