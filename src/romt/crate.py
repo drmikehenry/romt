@@ -610,13 +610,16 @@ def unpack(
                 found_bundle = True
                 tar_info.name = str(bundle_path)
                 common.vprint(f"[unpack] {tar_info.name}")
-                # Use the "fully_trusted" filter for this member because we're
-                # overriding the destination path to the correct value.
-                # (Otherwise, `.extract()` will not allow absolute paths for
-                # `tarinfo.name`).
-                tar_f.extract(
-                    tar_info, set_attrs=False, filter="fully_trusted"
-                )
+                if hasattr(tar_f, "extraction_filter"):
+                    # Use the "fully_trusted" filter for this member because
+                    # we're overriding the destination path to the correct
+                    # value.  (Otherwise, `.extract()` will not allow absolute
+                    # paths for `tarinfo.name`).
+                    tar_f.extract(
+                        tar_info, set_attrs=False, filter="fully_trusted"
+                    )
+                else:
+                    tar_f.extract(tar_info, set_attrs=False)
 
             elif tar_info.name.startswith(crates_prefix):
                 found_file = True

@@ -7,6 +7,12 @@ Version 0.6.1
 
 - Speed up tests.
 
+- Fix accidental reliance on backported security fixes in Python's ``tarfile``
+  module.  The "data_filter" feature was added in Python 3.12, but got
+  backported to some previous versions, making it look like it was supported
+  since Python 3.8 (our oldest supported version). Now we probe for the feature
+  directly to ensure it's available before we use it.
+
 Version 0.6.0
 =============
 

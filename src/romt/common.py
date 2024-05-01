@@ -210,6 +210,7 @@ def tar_context(
         tmp_archive_path.rename(archive_path)
     else:
         tar_f = tarfile.open(str(archive_path), mode)
-        tar_f.extraction_filter = tarfile.data_filter
+        if hasattr(tarfile, "data_filter"):
+            tar_f.extraction_filter = tarfile.data_filter
         yield tar_f
         tar_f.close()
