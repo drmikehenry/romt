@@ -2,6 +2,11 @@
 History
 *******
 
+Version 0.6.1
+=============
+
+- Speed up tests.
+
 Version 0.6.0
 =============
 

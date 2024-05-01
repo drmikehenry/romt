@@ -1,5 +1,6 @@
 import collections
 import copy
+import functools
 from pathlib import Path
 from typing import (
     Any,
@@ -63,13 +64,20 @@ class Package:
         return url[url.index(prefix) + len(prefix) :]
 
 
+@functools.lru_cache
+def toml_loads(contents: str) -> Any:
+    return toml.loads(contents)
+
+
 class Manifest:
     def __init__(self, raw_dict: MutableMapping[str, Any]):
         self._dict = raw_dict
 
     @staticmethod
     def from_toml_path(toml_path: Path) -> "Manifest":
-        return Manifest(toml.load(toml_path))
+        with open(toml_path) as f:
+            contents = f.read()
+        return Manifest(toml_loads(contents))
 
     def clone(self) -> "Manifest":
         return Manifest(copy.deepcopy(self._dict))

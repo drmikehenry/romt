@@ -189,12 +189,12 @@ def make_dist(root: Path, manifest: T.Any) -> None:
             make_dist(root, value)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def tests_path(request: pytest.FixtureRequest) -> Path:
     return Path(request.path).parent
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def upstream_path(tests_path: Path) -> Path:
     path = Path("fake") / "upstream"
     rmtree(path)
@@ -242,7 +242,7 @@ def upstream_path(tests_path: Path) -> Path:
     return path
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def inet_path() -> Path:
     inet_path = Path("fake") / "inet"
     rmtree(inet_path)
@@ -250,7 +250,7 @@ def inet_path() -> Path:
     return inet_path
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def offline_path() -> Path:
     offline_path = Path("fake") / "offline"
     rmtree(offline_path)
