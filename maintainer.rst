@@ -4,8 +4,17 @@ Maintainer's notes
 
 These notes are intended for use by the maintainer.
 
+Building an executable with PyInstaller
+=======================================
+
+- Use the Nox ``build`` session::
+
+    poetry run nox -s build
+
 Making a release
 ================
+
+Perform these steps on Linux.
 
 - Verify proper ``version = "x.y.z"`` in ``pyproject.toml``.
 
@@ -19,11 +28,9 @@ Making a release
 
     nox
 
-- On Linux, run:
+- Prepare the release::
 
-  .. code-block:: sh
-
-    ./prepare-release.sh
+    nox -s release
 
 - Follow on-screen instructions to complete release.
 

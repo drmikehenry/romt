@@ -171,31 +171,15 @@ environment.
 
     poetry shell
 
-- Optionally build an executable for your platform:
+- Optionally build an executable for your platform::
 
-  - Linux:
+    nox -s build
 
-  .. code-block:: sh
+  Find executables in ```dist/`` tree based on your platform, e.g.::
 
-    ./make-exec-linux.sh
-
-  - Windows:
-
-  .. code-block:: sh
-
-    make-exec-windows.bat
-
-  - Mac:
-
-  .. code-block:: sh
-
-    ./make-exec-darwin.sh
-
-  Find executables at::
-
-    dist/linux/romt
-    dist/windows/romt.exe
-    dist/darwin/romt
+    dist/x86_64-linux/romt
+    dist/x86_64-windows/romt.exe
+    dist/x86_64-darwin/romt
 
 Romt usage overview
 ===================

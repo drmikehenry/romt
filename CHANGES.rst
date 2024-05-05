@@ -13,6 +13,8 @@ Version 0.6.1
   since Python 3.8 (our oldest supported version). Now we probe for the feature
   directly to ensure it's available before we use it.
 
+- Move build and release steps into ``noxfile.py``.
+
 Version 0.6.0
 =============
 
