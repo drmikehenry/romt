@@ -15,6 +15,8 @@ Version 0.6.1
 
 - Move build and release steps into ``noxfile.py``.
 
+- Add Github workflow for testing and quality checks.
+
 Version 0.6.0
 =============
 
