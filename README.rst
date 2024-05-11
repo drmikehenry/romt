@@ -179,7 +179,7 @@ environment.
 
     dist/x86_64-linux/romt
     dist/x86_64-windows/romt.exe
-    dist/x86_64-darwin/romt
+    dist/aarch64-darwin/romt
 
 Romt usage overview
 ===================

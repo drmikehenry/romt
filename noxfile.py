@@ -50,10 +50,11 @@ def get_target_os() -> str:
 
 
 def get_target_arch() -> str:
-    arch = platform.machine()
-    # On Windows, get "AMD64" instead of "x86_64".
-    if arch == "AMD64":
+    arch = platform.machine().lower()
+    if arch == "amd64":
         arch = "x86_64"
+    elif arch == "arm64":
+        arch = "aarch64"
     return arch
 
 
