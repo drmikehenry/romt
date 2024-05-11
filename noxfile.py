@@ -236,6 +236,8 @@ def release(s: Session) -> None:
 
         On Windows machine:
           poetry run nox -s build
+        Alternatively, unzip from CI:
+          unzip -d dist/ dist-windows-latest.zip
 
         Tag and push:
           git tag -am 'Release v{version}.' v{version}

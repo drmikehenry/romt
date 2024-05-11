@@ -1,0 +1,6 @@
+name: Run docker
+description: Run docker
+
+runs:
+  using: docker
+  image: romt_build:latest
