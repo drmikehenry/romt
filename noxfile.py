@@ -13,7 +13,7 @@ from nox_poetry import Session, session
 
 nox.options.error_on_external_run = True
 nox.options.reuse_existing_virtualenvs = True
-nox.options.sessions = ["lint", "type_check", "test"]
+nox.options.sessions = ["lint", "type_check", "test", "req_check"]
 
 
 def get_project_version() -> str:
@@ -107,6 +107,33 @@ def lint_fix(s: Session) -> None:
 @session(venv_backend="none")
 def type_check(s: Session) -> None:
     s.run("mypy", "src", "tests", "noxfile.py")
+
+
+@session(venv_backend="none")
+def req_check(s: Session) -> None:
+    expected = s.run_always(
+        "poetry",
+        "export",
+        external=True,
+        silent=True,
+    )
+    actual = open("requirements.txt").read()
+    if actual != expected:
+        s.error(
+            "`requirements.txt` is out-of-date ( nox -s req_fix )",
+        )
+
+
+@session(venv_backend="none")
+def req_fix(s: Session) -> None:
+    s.run_always(
+        "poetry",
+        "export",
+        "-o",
+        "requirements.txt",
+        external=True,
+        silent=True,
+    )
 
 
 # Note: This `reuse_venv` does not yet have effect due to:
