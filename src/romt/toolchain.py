@@ -42,7 +42,7 @@ Where:
 TARGET is standard 3- or 4-tuple; common examples:
 - x86_64-unknown-linux-gnu (alias ``linux``)
 - x86_64-pc-windows-msvc (alias ``windows``)
-- x86_64-apple-darwin (alias ``darwin``)
+- aarch64-apple-darwin (alias ``darwin``)
 
 COMMAND values:
   Typical:

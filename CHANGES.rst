@@ -15,7 +15,15 @@ Version 0.6.1
 
 - Move build and release steps into ``noxfile.py``.
 
-- Add Github workflow for testing and quality checks.
+- Add GitHub workflow for testing and quality checks.
+
+- Add Docker-based build for Linux, based on Ubuntu 18.04.  This provides
+  executables that will run on older versions of Linux.
+
+- Add GitHub workflow for building Romt executables.
+
+- Change Romt's ``darwin`` alias to denote ``aarch64-apple-darwin`` now that
+  ``x86_64`` is no longer the primary macOS architecture.
 
 Version 0.6.0
 =============

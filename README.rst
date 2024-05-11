@@ -410,7 +410,7 @@ localhost using either Quick-start server configuration above.
     http://localhost:8000/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
 
   - Mac:
-    http://localhost:8000/rustup/dist/x86_64-apple-darwin/rustup-init
+    http://localhost:8000/rustup/dist/aarch64-apple-darwin/rustup-init
 
 - Run the installer, accepting the defaults:
 
@@ -564,7 +564,7 @@ ease of typing these common targets:
 
 - ``x86_64-unknown-linux-gnu`` (alias ``linux``)
 - ``x86_64-pc-windows-msvc`` (alias ``windows``)
-- ``x86_64-apple-darwin`` (alias ``darwin``)
+- ``aarch64-apple-darwin`` (alias ``darwin``)
 
 TARGET values are given by the option ``--target TARGET``.  Multiple TARGET
 options may be given, and each TARGET will be split at commas and whitespace to

@@ -12,7 +12,7 @@ def expand_target_alias(target: str) -> str:
     elif target == "windows":
         target = "x86_64-pc-windows-msvc"
     elif target == "darwin":
-        target = "x86_64-apple-darwin"
+        target = "aarch64-apple-darwin"
     return target
 
 
