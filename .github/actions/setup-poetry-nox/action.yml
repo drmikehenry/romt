@@ -1,0 +1,43 @@
+name: setup-poetry-nox
+description: Setup Python, Poetry, and Nox
+
+inputs:
+  python-version:
+    description: Python version
+    required: false
+    default: "3.11"
+  poetry-version:
+    description: Poetry version
+    required: false
+    default: "1.8.2"
+  poetry-plugin-export-version:
+    description: poetry-plugin-export version
+    required: false
+    default: "1.7.1"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install poetry
+      run: pipx install "poetry==${{ inputs.poetry-version }}"
+      shell: bash
+
+    - name: Install poetry-plugin-export
+      run: pipx inject poetry
+        "poetry-plugin-export==${{ inputs.poetry-plugin-export-version }}"
+      shell: bash
+
+    - name: Disable poetry warning about poetry-plugin-export
+      run: poetry config warnings.export false
+      shell: bash
+
+    - name: Set up Python "${{ inputs.python-version }}"
+      uses: actions/setup-python@v5
+      with:
+        python-version: "${{ inputs.python-version }}"
+        # https://github.com/actions/setup-python#caching-packages-dependencies
+        cache: poetry
+
+    - name: Install Nox
+      run: poetry install --only nox
+      shell: bash
