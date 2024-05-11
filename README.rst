@@ -175,7 +175,7 @@ environment.
 
     nox -s build
 
-  Find executables in ```dist/`` tree based on your platform, e.g.::
+  Find executables in ``dist/`` tree based on your platform, e.g.::
 
     dist/x86_64-linux/romt
     dist/x86_64-windows/romt.exe
