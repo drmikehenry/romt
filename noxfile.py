@@ -197,6 +197,26 @@ def build(s: Session) -> None:
 
 
 @session(venv_backend="none")
+def build_linux(s: Session) -> None:
+    # Remove any stray container if it exists; use
+    # `success_codes` to prevent `nox` failure if the
+    # container does not exist and `docker rm` fails.
+    s.run("docker", "rm", "romt-build", success_codes=[0, 1], silent=True)
+    s.run("docker", "build", ".", "-t", "romt-build")
+    s.run(
+        "docker",
+        "run",
+        "-v",
+        "./src:/src",
+        "--name",
+        "romt-build",
+        "romt-build",
+    )
+    s.run("docker", "cp", "romt-build:/dist/.", "dist/")
+    s.run("docker", "rm", "romt-build")
+
+
+@session(venv_backend="none")
 def release(s: Session) -> None:
     version = get_project_version()
     tar_path = Path("dist") / f"romt-{version}.tar.gz"
@@ -204,8 +224,9 @@ def release(s: Session) -> None:
     rmtree(Path("dist"))
     rmtree(Path("build"))
     s.log("NOTE: safe to perform Windows steps now...")
-    build(s)
-    s.run("poetry", "export", "-o", "requirements.txt")
+    s.run("poetry", "install")
+    # Build the `romt` executable for Linux:
+    build_linux(s)
     s.run("poetry", "build")
     s.run("twine", "check", str(tar_path), str(whl_path))
     print(
