@@ -144,7 +144,7 @@ def licenses(s: Session) -> None:
     # file directly on Windows, so only use the name and allow Poetry to
     # re-create it.
     with NamedTemporaryFile() as t:
-        requirements_file = Path(t.name)
+        requirements_path = Path(t.name)
 
     # Install dependencies without installing the package itself:
     #   https://github.com/cjolowicz/nox-poetry/issues/680
@@ -152,12 +152,12 @@ def licenses(s: Session) -> None:
         "poetry",
         "export",
         "--without-hashes",
-        f"--output={requirements_file}",
+        f"--output={requirements_path}",
         external=True,
     )
-    s.install("pip-licenses", "-r", str(requirements_file))
+    s.install("pip-licenses", "-r", str(requirements_path))
     s.run("pip-licenses", *s.posargs)
-    requirements_file.unlink()
+    requirements_path.unlink()
 
 
 @session(venv_backend="none")
