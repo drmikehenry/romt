@@ -2052,11 +2052,41 @@ Proxy server troubleshooting
 The author has not tested Romt with a proxy server, but user feedback indicates
 it's possible (see https://github.com/drmikehenry/romt/issues/10).  The
 ``httpx`` library's support for proxying is documented at:
-https://www.python-httpx.org/advanced/#http-proxying
+https://www.python-httpx.org/advanced/proxies/
 
-``httpx`` understands several environment variables (documented at the page
-above) that may be used to influence proxy operation.  In addition, ``httpx``
-has information about debugging proxy-related issues at:
+``httpx`` understands several environment variables (documented at
+https://www.python-httpx.org/environment_variables/ in the "Proxies" section)
+that may be used to influence proxy operation.  For example:
+
+- ``HTTP_PROXY``, ``HTTPS_PROXY``, ``ALL_PROXY``:
+
+  Valid values: A URL to a proxy
+
+  ``HTTP_PROXY``, ``HTTPS_PROXY``, ``ALL_PROXY`` set the proxy to be used for
+  http, https, or all requests respectively.
+
+  Example::
+
+    export HTTP_PROXY=http://my-external-proxy.com:1234
+
+    # This request will be sent through the proxy
+    python -c "import httpx; httpx.get('http://example.com')"
+
+    # This request will be sent directly, as we set `trust_env=False`
+    python -c "import httpx; httpx.get('http://example.com', trust_env=False)"
+
+- ``NO_PROXY``
+
+  Valid values: a comma-separated list of hostnames/urls
+
+  ``NO_PROXY`` disables the proxy for specific urls
+
+  Example::
+
+    export HTTP_PROXY=http://my-external-proxy.com:1234
+    export NO_PROXY=http://127.0.0.1,python-httpx.org
+
+In addition, ``httpx`` has information about debugging proxy-related issues at:
 https://www.python-httpx.org/contributing/#development-proxy-setup
 
 Also, ``httpx`` can produce more debugging information by setting the

@@ -25,6 +25,9 @@ Version 0.6.1
 - Change Romt's ``darwin`` alias to denote ``aarch64-apple-darwin`` now that
   ``x86_64`` is no longer the primary macOS architecture.
 
+- Note changed URL for ``httpx`` library; add some details on proxy-related
+  environment variables for ``httpx``.
+
 Version 0.6.0
 =============
 
