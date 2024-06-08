@@ -1,7 +1,7 @@
 import argparse
 import urllib.parse
 from pathlib import Path
-from typing import List, Optional
+import typing as T
 
 from romt import base, common, error
 
@@ -35,15 +35,15 @@ def path_append_exe_suffix(path: Path, target: str) -> Path:
     return common.path_append(path, suffix)
 
 
-def require_specs(specs: List[str]) -> List[str]:
+def require_specs(specs: T.List[str]) -> T.List[str]:
     if not specs:
         raise error.UsageError("missing required SPEC; try --select")
     return specs
 
 
 def require_targets(
-    targets: List[str], *, default: Optional[str] = None
-) -> List[str]:
+    targets: T.List[str], *, default: T.Optional[str] = None
+) -> T.List[str]:
     if not targets:
         if default is None:
             raise error.UsageError("missing required TARGET; try --target")
@@ -54,22 +54,22 @@ def require_targets(
 class DistMain(base.BaseMain):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__(args)
-        self._specs: Optional[List[str]] = None
-        self._targets: Optional[List[str]] = None
+        self._specs: T.Optional[T.List[str]] = None
+        self._targets: T.Optional[T.List[str]] = None
 
     @property
-    def specs(self) -> List[str]:
+    def specs(self) -> T.List[str]:
         if self._specs is None:
             specs = common.split_flatten_words(self.args.specs)
             self._specs = specs
         return self._specs
 
     @specs.setter
-    def specs(self, value: List[str]) -> None:
+    def specs(self, value: T.List[str]) -> None:
         self._specs = list(value)
 
     @property
-    def targets(self) -> List[str]:
+    def targets(self) -> T.List[str]:
         if self._targets is None:
             patterns = [
                 expand_target_alias(pattern)
@@ -79,7 +79,7 @@ class DistMain(base.BaseMain):
         return self._targets
 
     @targets.setter
-    def targets(self, targets: List[str]) -> None:
+    def targets(self, targets: T.List[str]) -> None:
         self._targets = list(targets)
 
     @property

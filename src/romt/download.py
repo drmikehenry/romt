@@ -1,12 +1,7 @@
 import functools
 import shutil
 from pathlib import Path
-from typing import (
-    Any,
-    Awaitable,
-    BinaryIO,
-    Callable,
-)
+import typing as T
 
 import httpx
 import trio
@@ -25,7 +20,7 @@ class Downloader:
     def set_warn_signature(self, warn_signature: bool) -> None:
         self._warn_signature = warn_signature
 
-    async def _aread_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+    async def _aread_fileobj(self, url: str, fileobj: T.BinaryIO) -> None:
         prefix = "file://"
         if url.startswith(prefix):
             url = url[len(prefix) :]
@@ -40,7 +35,7 @@ class Downloader:
         except FileNotFoundError as e:
             raise error.DownloadError(url, e)
 
-    async def adownload_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+    async def adownload_fileobj(self, url: str, fileobj: T.BinaryIO) -> None:
         if not url.startswith(("http:", "https:")):
             await self._aread_fileobj(url, fileobj)
             return
@@ -52,7 +47,7 @@ class Downloader:
         except httpx.HTTPError as e:
             raise error.DownloadError(url, e)
 
-    def download_fileobj(self, url: str, fileobj: BinaryIO) -> None:
+    def download_fileobj(self, url: str, fileobj: T.BinaryIO) -> None:
         self.run_job(self.adownload_fileobj, url, fileobj)
 
     async def _adownload(self, url: str, dest_path: Path) -> None:
@@ -232,7 +227,10 @@ class Downloader:
         )
 
     def run_job(
-        self, job: Callable[..., Awaitable[None]], *args: Any, **kwargs: Any
+        self,
+        job: T.Callable[..., T.Awaitable[None]],
+        *args: T.Any,
+        **kwargs: T.Any,
     ) -> None:
         trio.run(functools.partial(job, **kwargs), *args)
 

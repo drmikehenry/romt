@@ -1,6 +1,6 @@
 import hashlib
 from pathlib import Path
-from typing import BinaryIO, Optional
+import typing as T
 
 from romt import common
 from romt.error import (
@@ -15,7 +15,7 @@ def hash_bytes(data: bytes) -> str:
     return h.hexdigest()
 
 
-def hash_fileobj(fileobj: BinaryIO) -> str:
+def hash_fileobj(fileobj: T.BinaryIO) -> str:
     h = hashlib.sha256()
     while True:
         chunk = fileobj.read(8192)
@@ -75,7 +75,7 @@ def verify_hash(path: Path, expected_hash: str) -> None:
         )
 
 
-def verify(path: Path, hash_path: Optional[Path] = None) -> None:
+def verify(path: Path, hash_path: T.Optional[Path] = None) -> None:
     """
     Raises:
         MissingFileError - either path doesn't exist

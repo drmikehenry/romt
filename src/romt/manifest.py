@@ -2,22 +2,12 @@ import collections
 import copy
 import functools
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    MutableMapping,
-    Optional,
-    Tuple,
-)
+import typing as T
 
 import toml
 
 
-def target_matches_any(target: str, expected_targets: Iterable[str]) -> bool:
+def target_matches_any(target: str, expected_targets: T.Iterable[str]) -> bool:
     if target == "*":
         return True
     for expected in expected_targets:
@@ -28,14 +18,14 @@ def target_matches_any(target: str, expected_targets: Iterable[str]) -> bool:
 
 class Package:
     def __init__(
-        self, name: str, target: str, details: MutableMapping[str, Any]
+        self, name: str, target: str, details: T.MutableMapping[str, T.Any]
     ):
         self.name = name
         self.target = target
         self.available = details["available"]
         self.xz_url = str(details.get("xz_url", ""))
 
-    def _fields(self) -> Tuple[str, str]:
+    def _fields(self) -> T.Tuple[str, str]:
         return (self.name, self.target)
 
     def __repr__(self) -> str:
@@ -65,12 +55,12 @@ class Package:
 
 
 @functools.lru_cache
-def toml_loads(contents: str) -> Any:
+def toml_loads(contents: str) -> T.Any:
     return toml.loads(contents)
 
 
 class Manifest:
-    def __init__(self, raw_dict: MutableMapping[str, Any]):
+    def __init__(self, raw_dict: T.MutableMapping[str, T.Any]):
         self._dict = raw_dict
 
     @staticmethod
@@ -125,7 +115,7 @@ class Manifest:
         details = self._dict["pkg"][package_name]["target"][target]
         return Package(package_name, target, details)
 
-    def gen_all_packages(self) -> Generator[Package, None, None]:
+    def gen_all_packages(self) -> T.Generator[Package, None, None]:
         """Generate Package for all (name, target) in manifest."""
         for name, package_dict in self._dict["pkg"].items():
             for target in package_dict["target"].keys():
@@ -134,9 +124,9 @@ class Manifest:
     def gen_available_packages(
         self,
         *,
-        targets: Optional[Iterable[str]] = None,
-        rel_path_is_present: Optional[Callable[[str], bool]] = None,
-    ) -> Generator[Package, None, None]:
+        targets: T.Optional[T.Iterable[str]] = None,
+        rel_path_is_present: T.Optional[T.Callable[[str], bool]] = None,
+    ) -> T.Generator[Package, None, None]:
         """available packages matching targets and "present"."""
         if targets is None:
             target_list = ["*"]
@@ -153,7 +143,7 @@ class Manifest:
             ):
                 yield package
 
-    def all_targets(self) -> List[str]:
+    def all_targets(self) -> T.List[str]:
         targets = {p.target for p in self.gen_all_packages()}
         targets.discard("*")
         return sorted(targets)
@@ -161,9 +151,9 @@ class Manifest:
     def available_targets(
         self,
         *,
-        targets: Optional[Iterable[str]] = None,
-        rel_path_is_present: Optional[Callable[[str], bool]] = None,
-    ) -> List[str]:
+        targets: T.Optional[T.Iterable[str]] = None,
+        rel_path_is_present: T.Optional[T.Callable[[str], bool]] = None,
+    ) -> T.List[str]:
         available_targets = {
             p.target
             for p in self.gen_available_packages(
@@ -177,9 +167,9 @@ class Manifest:
     def available_target_types(
         self,
         *,
-        targets: Optional[Iterable[str]] = None,
-        rel_path_is_present: Optional[Callable[[str], bool]] = None,
-    ) -> Dict[str, str]:
+        targets: T.Optional[T.Iterable[str]] = None,
+        rel_path_is_present: T.Optional[T.Callable[[str], bool]] = None,
+    ) -> T.Dict[str, str]:
         target_packages = collections.defaultdict(set)
         rel_path_targets = collections.defaultdict(set)
         for package in self.gen_available_packages():
@@ -187,7 +177,7 @@ class Manifest:
             target_packages[package.target].add(package)
             rel_path_targets[package.rel_path].add(package.target)
 
-        target_types: Dict[str, str] = {}
+        target_types: T.Dict[str, str] = {}
         if targets is not None:
             target_list = list(targets)
         else:

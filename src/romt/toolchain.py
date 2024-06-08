@@ -3,13 +3,7 @@ import os
 import re
 import shutil
 from pathlib import Path
-from typing import (
-    Dict,
-    Iterable,
-    List,
-    Set,
-    Tuple,
-)
+import typing as T
 
 import trio
 
@@ -64,7 +58,7 @@ For complete details, try ``romt --readme`` to view README.rst.
 TOOLCHAIN_DEFAULT_URL = "https://static.rust-lang.org/dist"
 
 
-def parse_spec(spec: str) -> Tuple[str, str]:
+def parse_spec(spec: str) -> T.Tuple[str, str]:
     """parse spec into (date, channel).
 
     Forms with channel:
@@ -212,7 +206,7 @@ class Main(dist.DistMain):
         self._with_sig = not args.no_signature
         self.cross = args.cross
 
-    def manifest_url_path(self, date: str, channel: str) -> Tuple[str, Path]:
+    def manifest_url_path(self, date: str, channel: str) -> T.Tuple[str, Path]:
         rel_path = channel_rel_path(date, channel)
         manifest_url = self.url_from_rel_path(rel_path)
         manifest_path = self.dest_path_from_rel_path(rel_path)
@@ -256,7 +250,7 @@ class Main(dist.DistMain):
             )
         return manifest
 
-    def channels_in_dest_date(self, date: str) -> List[str]:
+    def channels_in_dest_date(self, date: str) -> T.List[str]:
         date_path = self.dest_path / date
         prefix = "channel-rust-"
         suffix = ".toml"
@@ -266,7 +260,7 @@ class Main(dist.DistMain):
         ]
         return channels
 
-    def adjust_download_specs(self, specs: List[str]) -> List[str]:
+    def adjust_download_specs(self, specs: T.List[str]) -> T.List[str]:
         # For downloads, require explicit date and channel.
         for spec in specs:
             date, channel = parse_spec(spec)
@@ -274,8 +268,8 @@ class Main(dist.DistMain):
                 raise error.UsageError(f"invalid wild SPEC: {spec}")
         return dist.require_specs(specs)
 
-    def expand_wild_spec(self, spec: str) -> List[str]:
-        specs: List[str] = []
+    def expand_wild_spec(self, spec: str) -> T.List[str]:
+        specs: T.List[str] = []
         date, channel = parse_spec(spec)
         if "*" in (date, channel) or date == "latest":
             if channel == "*":
@@ -301,7 +295,7 @@ class Main(dist.DistMain):
 
         return specs
 
-    def adjust_wild_specs(self, specs: List[str]) -> List[str]:
+    def adjust_wild_specs(self, specs: T.List[str]) -> T.List[str]:
         # For non-downloads, handle wild specs.
         adjusted_specs = []
         for spec in specs:
@@ -312,21 +306,21 @@ class Main(dist.DistMain):
         dest_path = self.dest_path_from_rel_path(rel_path)
         return dest_path.is_file()
 
-    def downloaded_packages(self, manifest: Manifest) -> List[Package]:
+    def downloaded_packages(self, manifest: Manifest) -> T.List[Package]:
         return list(
             manifest.gen_available_packages(
                 rel_path_is_present=self._rel_path_is_downloaded
             )
         )
 
-    def downloaded_target_types(self, manifest: Manifest) -> Dict[str, str]:
+    def downloaded_target_types(self, manifest: Manifest) -> T.Dict[str, str]:
         return manifest.available_target_types(
             rel_path_is_present=self._rel_path_is_downloaded
         )
 
     def adjust_targets(
-        self, manifest: Manifest, base_targets: List[str]
-    ) -> List[str]:
+        self, manifest: Manifest, base_targets: T.List[str]
+    ) -> T.List[str]:
         all_targets = set(manifest.all_targets())
         targets = set()
         for target in base_targets:
@@ -371,7 +365,7 @@ class Main(dist.DistMain):
     def _path_duplicated(
         self,
         path: Path,
-        processed_paths: Set[Path],
+        processed_paths: T.Set[Path],
     ) -> bool:
         if path in processed_paths:
             return True
@@ -381,8 +375,8 @@ class Main(dist.DistMain):
     async def _download_verify_packages(
         self,
         download: bool,
-        packages: Iterable[Package],
-        processed_paths: Set[Path],
+        packages: T.Iterable[Package],
+        processed_paths: T.Set[Path],
     ) -> None:
         async with trio.open_nursery() as nursery:
             limiter = self.downloader.new_limiter()
@@ -406,8 +400,8 @@ class Main(dist.DistMain):
         self,
         manifest: Manifest,
         *,
-        targets: Iterable[str],
-    ) -> Set[Package]:
+        targets: T.Iterable[str],
+    ) -> T.Set[Package]:
         packages = set()
         for target in targets:
             # In most cases, we need all available packages.
@@ -433,10 +427,10 @@ class Main(dist.DistMain):
         *,
         download: bool,
         cross: bool,
-        specs: List[str],
-        base_targets: List[str],
+        specs: T.List[str],
+        base_targets: T.List[str],
     ) -> None:
-        processed_paths: Set[Path] = set()
+        processed_paths: T.Set[Path] = set()
         for spec in specs:
             common.iprint(
                 "{}: {}".format("Download" if download else "Verify", spec)
@@ -494,7 +488,7 @@ class Main(dist.DistMain):
         max_verbosity = common.get_max_verbosity()
         show_details = max_verbosity >= common.VERBOSITY_INFO
         for spec in self.adjust_wild_specs(self.specs):
-            common.vprint(f"List: {spec}")
+            common.vprint(f"T.List: {spec}")
             manifest = self.select_manifest(spec, download=False)
             if show_details:
                 available_packages = list(manifest.gen_available_packages())
@@ -541,7 +535,7 @@ class Main(dist.DistMain):
         archive_path = self.get_archive_path()
         common.iprint(f"Packing archive: {archive_path}")
         with common.tar_context(archive_path, "w") as tar_f:
-            processed_paths: Set[Path] = set()
+            processed_paths: T.Set[Path] = set()
 
             def pack_path(rel_path: str) -> None:
                 dest_path = self.dest_path_from_rel_path(rel_path)
@@ -590,7 +584,7 @@ class Main(dist.DistMain):
                 for package in packages:
                     pack_rel_path(package.rel_path)
 
-    def _detect_specs(self, rel_paths: Set[str]) -> List[str]:
+    def _detect_specs(self, rel_paths: T.Set[str]) -> T.List[str]:
         specs = []
         for rel_path in rel_paths:
             m = re.match(
@@ -610,9 +604,9 @@ class Main(dist.DistMain):
         return specs
 
     def _detect_targets(
-        self, specs: List[str], rel_paths: Set[str]
-    ) -> List[str]:
-        targets: Set[str] = set()
+        self, specs: T.List[str], rel_paths: T.Set[str]
+    ) -> T.List[str]:
+        targets: T.Set[str] = set()
         for spec in specs:
             manifest = self.select_manifest(spec, download=False)
             target_types = manifest.available_target_types(

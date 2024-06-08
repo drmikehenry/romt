@@ -1,12 +1,14 @@
 import argparse
 from pathlib import Path
-from typing import List, Optional
+import typing as T
 
 import romt.download
 from romt import error
 
 
-def verify_commands(commands: List[str], valid_commands: List[str]) -> None:
+def verify_commands(
+    commands: T.List[str], valid_commands: T.List[str]
+) -> None:
     for command in commands:
         if command not in valid_commands:
             raise error.UsageError(f"invalid COMMAND {repr(command)}")
@@ -24,7 +26,7 @@ def add_downloader_arguments(parser: argparse.ArgumentParser) -> None:
 class BaseMain:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
-        self._downloader: Optional[romt.download.Downloader] = None
+        self._downloader: T.Optional[romt.download.Downloader] = None
 
     @property
     def downloader(self) -> romt.download.Downloader:

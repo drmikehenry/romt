@@ -4,7 +4,7 @@ import http.server
 import os
 from pathlib import Path
 import subprocess
-from typing import Optional
+import typing as T
 
 import romt.crate
 from romt import common
@@ -37,7 +37,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def find_git_cgi_path() -> Optional[Path]:
+def find_git_cgi_path() -> T.Optional[Path]:
     cgi_path = Path("cgi-bin")
     if common.is_windows:
         candidates = [
@@ -164,7 +164,7 @@ else:
     ]
 
 
-def get_git_http_backend_path() -> Optional[Path]:
+def get_git_http_backend_path() -> T.Optional[Path]:
     for source in GIT_HTTP_BACKEND_SOURCES:
         source_path = Path(source)
         if source_path.is_file():

@@ -2,11 +2,7 @@ import argparse
 import os
 import shutil
 from pathlib import Path
-from typing import (
-    List,
-    Set,
-    Tuple,
-)
+import typing as T
 
 import toml
 
@@ -177,7 +173,7 @@ class Main(dist.DistMain):
         super().__init__(args)
 
     @property
-    def release_stable_url_path(self) -> Tuple[str, Path]:
+    def release_stable_url_path(self) -> T.Tuple[str, Path]:
         rel_path = "release-stable.toml"
         release_stable_url = self.url_from_rel_path(rel_path)
         release_stable_path = self.dest_path_from_rel_path(rel_path)
@@ -230,11 +226,11 @@ class Main(dist.DistMain):
         else:
             return spec
 
-    def downloaded_versions(self) -> List[str]:
+    def downloaded_versions(self) -> T.List[str]:
         versions = [p.name for p in self.artifact_root_path.glob("*")]
         return common.reverse_sorted_versions(versions)
 
-    def adjust_download_specs(self, specs: List[str]) -> List[str]:
+    def adjust_download_specs(self, specs: T.List[str]) -> T.List[str]:
         # For downloads, wildcards not permitted.
         for spec in specs:
             validate_spec(spec)
@@ -242,8 +238,8 @@ class Main(dist.DistMain):
                 raise error.UsageError(f"invalid wild SPEC: {spec}")
         return dist.require_specs(specs)
 
-    def expand_wild_spec(self, spec: str) -> List[str]:
-        specs: List[str] = []
+    def expand_wild_spec(self, spec: str) -> T.List[str]:
+        specs: T.List[str] = []
         validate_spec(spec)
         if spec == "*":
             specs.extend(self.downloaded_versions())
@@ -261,20 +257,20 @@ class Main(dist.DistMain):
 
         return specs
 
-    def adjust_wild_specs(self, specs: List[str]) -> List[str]:
+    def adjust_wild_specs(self, specs: T.List[str]) -> T.List[str]:
         # For non-downloads, handle wild specs.
         adjusted_specs = []
         for spec in specs:
             adjusted_specs.extend(self.expand_wild_spec(spec))
         return dist.require_specs(adjusted_specs)
 
-    def downloaded_targets(self, version: str) -> List[str]:
+    def downloaded_targets(self, version: str) -> T.List[str]:
         target_paths = common.gen_dirs(self.artifact_version_path(version))
         return sorted(t.name for t in target_paths)
 
     def adjust_targets(
-        self, version: str, base_targets: List[str]
-    ) -> List[str]:
+        self, version: str, base_targets: T.List[str]
+    ) -> T.List[str]:
         targets = set()
         known_targets = set(ALL_KNOWN_TARGETS)
         for target in base_targets:
@@ -289,7 +285,7 @@ class Main(dist.DistMain):
         return sorted(targets)
 
     def _download_verify(
-        self, download: bool, specs: List[str], base_targets: List[str]
+        self, download: bool, specs: T.List[str], base_targets: T.List[str]
     ) -> None:
         for spec in specs:
             common.iprint(
@@ -332,7 +328,7 @@ class Main(dist.DistMain):
         max_verbosity = common.get_max_verbosity()
         show_details = max_verbosity >= common.VERBOSITY_INFO
         for spec in self.adjust_wild_specs(self.specs):
-            common.iprint(f"List: {spec}")
+            common.iprint(f"T.List: {spec}")
             version = self.version_from_spec(spec, download=False)
             if show_details:
                 targets = self.downloaded_targets(version)
@@ -385,8 +381,8 @@ class Main(dist.DistMain):
                     pack_rel_path(rel_path)
 
     def _detect_version_targets(
-        self, rel_paths: Set[str]
-    ) -> Tuple[List[str], List[str]]:
+        self, rel_paths: T.Set[str]
+    ) -> T.Tuple[T.List[str], T.List[str]]:
         # rel_paths should be: "archive/<version>/<target>/<file>".
         versions = set()
         targets = set()

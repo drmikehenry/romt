@@ -10,7 +10,7 @@ import tempfile
 import typing
 import urllib.parse
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Set, Tuple
+import typing as T
 
 # Using `try/except` here to prevent this lint warning caused by setting the
 # environment variable before subsequent imports::
@@ -99,7 +99,7 @@ class PrefixStyle(enum.Enum):
         return "mixed"
 
 
-CratesConfig = Dict[str, Any]
+CratesConfig = T.Dict[str, T.Any]
 
 
 def _crates_config_prefix_style(crates_config: CratesConfig) -> PrefixStyle:
@@ -172,7 +172,7 @@ def _prevent_mixed_with_case_insensitive(crates_root_path: Path) -> None:
             raise error.AbortError
 
 
-def crate_name_version_from_rel_path(rel_path: str) -> Tuple[str, str]:
+def crate_name_version_from_rel_path(rel_path: str) -> T.Tuple[str, str]:
     m = re.search(
         r"""
         /
@@ -224,11 +224,11 @@ def _has_meta(pat: str) -> bool:
 
 class CrateFilter:
     def __init__(self) -> None:
-        # "exact_crate_name" : Set[version_pats]
-        self._exact_map: Dict[str, Set[str]] = {}
+        # "exact_crate_name" : T.Set[version_pats]
+        self._exact_map: T.Dict[str, T.Set[str]] = {}
 
-        # "crate_name_pat" : Set[version_pats]
-        self._pattern_map: Dict[str, Set[str]] = {}
+        # "crate_name_pat" : T.Set[version_pats]
+        self._pattern_map: T.Dict[str, T.Set[str]] = {}
 
         # Singleton for the pattern "all versions".
         self._all_versions_pat = set(["*"])
@@ -236,7 +236,7 @@ class CrateFilter:
     def is_filtered(self) -> bool:
         return len(self._exact_map) + len(self._pattern_map) > 0
 
-    def patterns(self) -> List[str]:
+    def patterns(self) -> T.List[str]:
         result = []
         for d in [self._exact_map, self._pattern_map]:
             for crate_name_pat, version_pats in d.items():
@@ -259,7 +259,7 @@ class CrateFilter:
             if pats is not self._all_versions_pat:
                 pats.add(version_pat)
 
-    def _version_pats(self, name: str) -> Generator[Set[str], None, None]:
+    def _version_pats(self, name: str) -> T.Generator[T.Set[str], None, None]:
         if not self.is_filtered():
             yield self._all_versions_pat
             return
@@ -276,12 +276,12 @@ class CrateFilter:
         return next(self._version_pats(name), None) is not None
 
     def filter_crate_versions(
-        self, crate_name: str, versions: Set[str]
-    ) -> Set[str]:
+        self, crate_name: str, versions: T.Set[str]
+    ) -> T.Set[str]:
         # If the `crate_name` doesn't match anything, we shouldn't generally
         # be calling this function; we'll return the empty set in this case.
         candidate_versions = set(versions)
-        matching_versions: Set[str] = set()
+        matching_versions: T.Set[str] = set()
         for pats in self._version_pats(crate_name):
             if pats is self._all_versions_pat:
                 matching_versions.update(candidate_versions)
@@ -301,10 +301,10 @@ class CrateFilter:
 
 
 def blobs_in_commit_range(
-    start_commit: Optional[git.objects.Commit],
+    start_commit: T.Optional[git.objects.Commit],
     end_commit: git.objects.Commit,
     crate_filter: CrateFilter,
-) -> Generator[Tuple[str, str, bytes, bytes], None, None]:
+) -> T.Generator[T.Tuple[str, str, bytes, bytes], None, None]:
     """Generate (blob_path, lower_name, start_blob, end_blob)."""
     if start_commit is not None:
         for diff in end_commit.diff(start_commit):
@@ -337,7 +337,7 @@ class Crate:
         return f"Crate({self.name}, {self.version}, {self.hash})"
 
     @property
-    def ident(self) -> Tuple[str, str]:
+    def ident(self) -> T.Tuple[str, str]:
         return self.name, self.version
 
     def prefix(self, prefix_style: PrefixStyle) -> str:
@@ -352,7 +352,7 @@ class Crate:
         )
 
 
-def blob_lines(blob: bytes) -> Generator[str, None, None]:
+def blob_lines(blob: bytes) -> T.Generator[str, None, None]:
     yield from blob.decode("utf8").splitlines()
 
 
@@ -361,7 +361,7 @@ def crate_from_text(line: str) -> Crate:
     return Crate(j["name"], j["vers"], j["cksum"])
 
 
-def blob_crates(blob: bytes) -> Generator[Crate, None, None]:
+def blob_crates(blob: bytes) -> T.Generator[Crate, None, None]:
     d = {}
     for line in blob_lines(blob):
         crate = crate_from_text(line)
@@ -371,10 +371,10 @@ def blob_crates(blob: bytes) -> Generator[Crate, None, None]:
 
 
 def crate_changes_in_commit_range(
-    start_commit: Optional[git.objects.Commit],
+    start_commit: T.Optional[git.objects.Commit],
     end_commit: git.objects.Commit,
     crate_filter: CrateFilter,
-) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
+) -> T.Generator[T.Tuple[T.List[Crate], T.List[Crate]], None, None]:
     """Generate pairs in range: (list(crates_added), list(crates_removed))."""
 
     rex = re.compile(
@@ -424,7 +424,7 @@ def crate_changes_in_range(
     start: str,
     end: str,
     crate_filter: CrateFilter,
-) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
+) -> T.Generator[T.Tuple[T.List[Crate], T.List[Crate]], None, None]:
     """Generate pairs in range: (list(crates_added), list(crates_removed))."""
     try:
         start_commit = repo.commit(start) if start else None
@@ -513,8 +513,8 @@ def mark(repo: git.Repo, end: str) -> None:
 
 
 def list_crates(
-    crates: List[Crate],
-    crates_removed: List[Crate],
+    crates: T.List[Crate],
+    crates_removed: T.List[Crate],
     *,
     prefix_style: PrefixStyle,
     show_path: bool,
@@ -542,8 +542,8 @@ def list_crates(
 
 def _process_crates(
     downloader: romt.download.Downloader,
-    dl_template: Optional[str],
-    crates: List[Crate],
+    dl_template: T.Optional[str],
+    crates: T.List[Crate],
     crates_root: Path,
     good_paths_log_path: str,
     bad_paths_log_path: str,
@@ -622,7 +622,7 @@ def _process_crates(
 def download_crates(
     downloader: romt.download.Downloader,
     dl_template: str,
-    crates: List[Crate],
+    crates: T.List[Crate],
     crates_root: Path,
     good_paths_log_path: str,
     bad_paths_log_path: str,
@@ -644,7 +644,7 @@ def download_crates(
 
 def verify_crates(
     downloader: romt.download.Downloader,
-    crates: List[Crate],
+    crates: T.List[Crate],
     crates_root: Path,
     good_paths_log_path: str,
     bad_paths_log_path: str,
@@ -665,9 +665,9 @@ def verify_crates(
 
 
 def pack(
-    crates: List[Crate],
+    crates: T.List[Crate],
     crates_root: Path,
-    bundle_path: Optional[Path],
+    bundle_path: T.Optional[Path],
     archive_path: Path,
     keep_going: bool,
 ) -> None:
@@ -804,9 +804,9 @@ def _config_json_path(repo: git.Repo) -> Path:
     return config_path
 
 
-def read_config_json(repo: git.Repo) -> Optional[bytes]:
+def read_config_json(repo: git.Repo) -> T.Optional[bytes]:
     config_path = _config_json_path(repo)
-    initial_config: Optional[bytes] = None
+    initial_config: T.Optional[bytes] = None
     if config_path.is_file():
         initial_config = config_path.read_bytes()
     return initial_config
@@ -1097,9 +1097,9 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 class Main(base.BaseMain):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__(args)
-        self._repo: Optional[git.Repo] = None
-        self._crates_added: Optional[List[Crate]] = None
-        self._crates_removed: Optional[List[Crate]] = None
+        self._repo: T.Optional[git.Repo] = None
+        self._crates_added: T.Optional[T.List[Crate]] = None
+        self._crates_removed: T.Optional[T.List[Crate]] = None
         self._crate_filter = CrateFilter()
 
     def _get_start(self) -> str:
@@ -1142,7 +1142,7 @@ class Main(base.BaseMain):
         self._crates_added = None
         self._crates_removed = None
 
-    def _get_crates_changed(self) -> Tuple[List[Crate], List[Crate]]:
+    def _get_crates_changed(self) -> T.Tuple[T.List[Crate], T.List[Crate]]:
         if self._crates_added is None or self._crates_removed is None:
             common.vprint("[calculating crate list]")
             crates_added = []
@@ -1165,11 +1165,11 @@ class Main(base.BaseMain):
             self._crates_removed = crates_removed
         return self._crates_added, self._crates_removed
 
-    def get_crates(self) -> List[Crate]:
+    def get_crates(self) -> T.List[Crate]:
         crates_added, _crates_removed = self._get_crates_changed()
         return crates_added
 
-    def get_crates_removed(self) -> List[Crate]:
+    def get_crates_removed(self) -> T.List[Crate]:
         _crates_added, crates_removed = self._get_crates_changed()
         return crates_removed
 
@@ -1203,7 +1203,7 @@ class Main(base.BaseMain):
 
         return path
 
-    def get_commands(self) -> List[str]:
+    def get_commands(self) -> T.List[str]:
         valid_commands = [
             "pull",
             "prune",

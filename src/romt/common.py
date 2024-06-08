@@ -6,16 +6,7 @@ import stat
 import tarfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import (
-    IO,
-    Any,
-    Generator,
-    Iterable,
-    List,
-    NoReturn,
-    Optional,
-    Tuple,
-)
+import typing as T
 
 import romt.error
 
@@ -38,28 +29,28 @@ def set_max_verbosity(max_verbosity: int) -> None:
     _max_verbosity = max_verbosity
 
 
-def _print_verbosity(verbosity: int, *args: Any, **kwargs: Any) -> None:
+def _print_verbosity(verbosity: int, *args: T.Any, **kwargs: T.Any) -> None:
     if verbosity <= _max_verbosity:
         print(*args, flush=True, **kwargs)
 
 
-def vvprint(*args: Any, **kwargs: Any) -> None:
+def vvprint(*args: T.Any, **kwargs: T.Any) -> None:
     _print_verbosity(VERBOSITY_VVERBOSE, *args, **kwargs)
 
 
-def vprint(*args: Any, **kwargs: Any) -> None:
+def vprint(*args: T.Any, **kwargs: T.Any) -> None:
     _print_verbosity(VERBOSITY_VERBOSE, *args, **kwargs)
 
 
-def iprint(*args: Any, **kwargs: Any) -> None:
+def iprint(*args: T.Any, **kwargs: T.Any) -> None:
     _print_verbosity(VERBOSITY_INFO, *args, **kwargs)
 
 
-def eprint(*args: Any, **kwargs: Any) -> None:
+def eprint(*args: T.Any, **kwargs: T.Any) -> None:
     _print_verbosity(VERBOSITY_ERROR, *args, **kwargs)
 
 
-def abort(*args: Any, **kwargs: Any) -> NoReturn:
+def abort(*args: T.Any, **kwargs: T.Any) -> T.NoReturn:
     eprint(*args, **kwargs)
     raise romt.error.AbortError()
 
@@ -72,11 +63,11 @@ def is_version(version: str) -> bool:
     return re.match(r"\d+\.\d+\.\d+$", version) is not None
 
 
-def version_sort_key(version: str) -> Tuple[int, ...]:
+def version_sort_key(version: str) -> T.Tuple[int, ...]:
     return tuple(int(v) for v in version.split("."))
 
 
-def reverse_sorted_versions(versions: List[str]) -> List[str]:
+def reverse_sorted_versions(versions: T.List[str]) -> T.List[str]:
     return sorted(versions, key=version_sort_key, reverse=True)
 
 
@@ -114,14 +105,14 @@ def chmod_executable(path: Path) -> None:
     os.chmod(str(path), path.stat().st_mode | x_bits)
 
 
-def gen_dirs(parent: Path) -> Generator[Path, None, None]:
+def gen_dirs(parent: Path) -> T.Generator[Path, None, None]:
     """generate Path for each dir in parent."""
     for candidate in parent.glob("*"):
         if candidate.is_dir():
             yield candidate
 
 
-def reversed_date_dir_names(parent: Path) -> List[str]:
+def reversed_date_dir_names(parent: Path) -> T.List[str]:
     """list of yyyy-mm-dd dirnames in parent (newest to oldest)."""
     dirs = sorted(
         (d.name for d in gen_dirs(parent) if is_date(d.name)),
@@ -130,11 +121,11 @@ def reversed_date_dir_names(parent: Path) -> List[str]:
     return dirs
 
 
-def open_optional(path: str, mode: str) -> Optional[IO[Any]]:
+def open_optional(path: str, mode: str) -> T.Optional[T.IO[T.Any]]:
     return open(path, mode) if path else None
 
 
-def close_optional(f: Optional[IO[Any]]) -> None:
+def close_optional(f: T.Optional[T.IO[T.Any]]) -> None:
     if f:
         f.close()
 
@@ -161,13 +152,13 @@ def remove_empty_dirs(root_path: Path, dir_rel_path: str) -> None:
         parts.pop()
 
 
-def log(log_file: Optional[IO[Any]], message: Any) -> None:
+def log(log_file: T.Optional[T.IO[T.Any]], message: T.Any) -> None:
     if log_file is not None:
         log_file.write(f"{message}\n")
         log_file.flush()
 
 
-def split_word(item: str) -> List[str]:
+def split_word(item: str) -> T.List[str]:
     """split item into list of words at commas or runs of whitespace.
 
     Retains any duplicates and empty strings.
@@ -175,7 +166,7 @@ def split_word(item: str) -> List[str]:
     return [part for part in re.split(r"(?:,|\s+)", item)]
 
 
-def split_flatten_words(words: Iterable[str]) -> List[str]:
+def split_flatten_words(words: T.Iterable[str]) -> T.List[str]:
     """split_word(each_word in words) into flattened, deduped list."""
     dedup = set()
     result = []
@@ -187,13 +178,13 @@ def split_flatten_words(words: Iterable[str]) -> List[str]:
     return result
 
 
-def split_flatten_normalize_words(words: Iterable[str]) -> List[str]:
+def split_flatten_normalize_words(words: T.Iterable[str]) -> T.List[str]:
     """split_flatten_words(), remove dups and empty, sort."""
     norm_words = {w for w in split_flatten_words(words) if w}
     return sorted(norm_words)
 
 
-def normalize_patterns(patterns: Iterable[str]) -> List[str]:
+def normalize_patterns(patterns: T.Iterable[str]) -> T.List[str]:
     """split, flatten, remove dups and empty, reduce "*", sort."""
     norm_patterns = split_flatten_normalize_words(patterns)
     if "*" in norm_patterns:
@@ -204,7 +195,7 @@ def normalize_patterns(patterns: Iterable[str]) -> List[str]:
 @contextmanager
 def tar_context(
     archive_path: Path, mode: str
-) -> Generator[tarfile.TarFile, None, None]:
+) -> T.Generator[tarfile.TarFile, None, None]:
     """mode is "r" (read) or "w" (write)."""
     writing = mode == "w"
     if archive_path.name.endswith(".gz"):

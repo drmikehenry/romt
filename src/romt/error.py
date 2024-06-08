@@ -1,4 +1,4 @@
-from typing import Optional
+import typing as T
 
 
 class Error(Exception):
@@ -28,9 +28,9 @@ class IntegrityError(Error):
         self,
         name: str,
         *,
-        actual_hash: Optional[str] = None,
-        expected_hash: Optional[str] = None,
-        sig_name: Optional[str] = None,
+        actual_hash: T.Optional[str] = None,
+        expected_hash: T.Optional[str] = None,
+        sig_name: T.Optional[str] = None,
     ) -> None:
         if actual_hash and expected_hash:
             message = "Bad hash for {} (got {}, expected {})".format(

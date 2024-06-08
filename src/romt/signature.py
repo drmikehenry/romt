@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import Any, Optional
+import typing as T
 
 import gnupg
 
@@ -113,16 +113,16 @@ def path_append_sig_suffix(path: Path) -> Path:
 
 class Verifier:
     def __init__(self) -> None:
-        # `TemporaryDirectory` is a generic type.  If we pass `Any` to it, it
+        # `TemporaryDirectory` is a generic type.  If we pass `T.Any` to it, it
         # will fail at runtime unless we also use this:
         #   from __future__ import annotations
         # See https://stackoverflow.com/questions/55076778/:
         # "Why isn't this function type-annotated correctly (error: Missing
         # type parameters for generic type)?"
-        self._gpg_home: Optional[tempfile.TemporaryDirectory[Any]] = None
-        self._gpg: Optional[gnupg.GPG] = None
+        self._gpg_home: T.Optional[tempfile.TemporaryDirectory[T.Any]] = None
+        self._gpg: T.Optional[gnupg.GPG] = None
 
-    def _get_gpg(self) -> Optional[gnupg.GPG]:
+    def _get_gpg(self) -> T.Optional[gnupg.GPG]:
         if self._gpg_home is None:
             self._gpg_home = tempfile.TemporaryDirectory()
             try:
