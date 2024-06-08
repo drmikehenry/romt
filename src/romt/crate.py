@@ -1,14 +1,16 @@
 import argparse
 import enum
+import fnmatch
 import json
 import os
+import os.path
 import re
 import shutil
 import tempfile
 import typing
 import urllib.parse
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple
 
 # Using `try/except` here to prevent this lint warning caused by setting the
 # environment variable before subsequent imports::
@@ -213,28 +215,116 @@ def crate_rel_path_from_name_version(
     return Path(prefix) / name / basename
 
 
+def _has_meta(pat: str) -> bool:
+    for meta in "*?[]":
+        if meta in pat:
+            return True
+    return False
+
+
+class CrateFilter:
+    def __init__(self) -> None:
+        # "exact_crate_name" : Set[version_pats]
+        self._exact_map: Dict[str, Set[str]] = {}
+
+        # "crate_name_pat" : Set[version_pats]
+        self._pattern_map: Dict[str, Set[str]] = {}
+
+        # Singleton for the pattern "all versions".
+        self._all_versions_pat = set(["*"])
+
+    def is_filtered(self) -> bool:
+        return len(self._exact_map) + len(self._pattern_map) > 0
+
+    def patterns(self) -> List[str]:
+        result = []
+        for d in [self._exact_map, self._pattern_map]:
+            for crate_name_pat, version_pats in d.items():
+                for pat in version_pats:
+                    result.append(f"{crate_name_pat}@{pat}")
+        return result
+
+    def add(self, pat: str) -> None:
+        if "@" in pat:
+            crate_name_pat, version_pat = pat.split("@", 1)
+        else:
+            crate_name_pat, version_pat = pat, ""
+        crate_name_pat = crate_name_pat or "*"
+        version_pat = version_pat or "*"
+        d = self._pattern_map if _has_meta(crate_name_pat) else self._exact_map
+        if version_pat == "*":
+            d[crate_name_pat] = self._all_versions_pat
+        else:
+            pats = d.setdefault(crate_name_pat, set())
+            if pats is not self._all_versions_pat:
+                pats.add(version_pat)
+
+    def _version_pats(self, name: str) -> Generator[Set[str], None, None]:
+        if not self.is_filtered():
+            yield self._all_versions_pat
+            return
+
+        version_pats = self._exact_map.get(name)
+        if version_pats is not None:
+            yield version_pats
+
+        for name_pat, version_pats in self._pattern_map.items():
+            if fnmatch.fnmatchcase(name, name_pat):
+                yield version_pats
+
+    def name_matches(self, name: str) -> bool:
+        return next(self._version_pats(name), None) is not None
+
+    def filter_crate_versions(
+        self, crate_name: str, versions: Set[str]
+    ) -> Set[str]:
+        # If the `crate_name` doesn't match anything, we shouldn't generally
+        # be calling this function; we'll return the empty set in this case.
+        candidate_versions = set(versions)
+        matching_versions: Set[str] = set()
+        for pats in self._version_pats(crate_name):
+            if pats is self._all_versions_pat:
+                matching_versions.update(candidate_versions)
+                break
+            next_candidate_versions = set()
+            for version in candidate_versions:
+                for pat in pats:
+                    if fnmatch.fnmatchcase(version, pat):
+                        matching_versions.add(version)
+                        break
+                else:
+                    next_candidate_versions.add(version)
+            candidate_versions = next_candidate_versions
+            if len(candidate_versions) == 0:
+                break
+        return matching_versions
+
+
 def blobs_in_commit_range(
     start_commit: Optional[git.objects.Commit],
     end_commit: git.objects.Commit,
+    crate_filter: CrateFilter,
 ) -> Generator[Tuple[str, str, bytes, bytes], None, None]:
     """Generate (blob_path, lower_name, start_blob, end_blob)."""
     if start_commit is not None:
         for diff in end_commit.diff(start_commit):
             blob_path = diff.a_path or diff.b_path
             lower_name = os.path.basename(blob_path).lower()
-            # diff.a_xxx goes with `end_commit`.
-            # diff.b_xxx goes with `start_commit`.
-            # I.e., time-wise, `b` changes to become `a`.
-            a_blob = diff.a_blob.data_stream.read() if diff.a_blob else b""
-            b_blob = diff.b_blob.data_stream.read() if diff.b_blob else b""
-            yield blob_path, lower_name, b_blob, a_blob
+            if crate_filter.name_matches(lower_name):
+                # diff.a_xxx goes with `end_commit`.
+                # diff.b_xxx goes with `start_commit`.
+                # I.e., time-wise, `b` changes to become `a`.
+                a_blob = diff.a_blob.data_stream.read() if diff.a_blob else b""
+                b_blob = diff.b_blob.data_stream.read() if diff.b_blob else b""
+                yield blob_path, lower_name, b_blob, a_blob
     else:
         for item in end_commit.tree.traverse():
             if getattr(item, "type") == "blob":
                 blob = typing.cast(git.objects.Blob, item)
                 blob_path = str(blob.path)
                 lower_name = os.path.basename(blob_path).lower()
-                yield blob_path, lower_name, b"", blob.data_stream.read()
+                if crate_filter.name_matches(lower_name):
+                    yield blob_path, lower_name, b"", blob.data_stream.read()
 
 
 class Crate:
@@ -283,6 +373,7 @@ def blob_crates(blob: bytes) -> Generator[Crate, None, None]:
 def crate_changes_in_commit_range(
     start_commit: Optional[git.objects.Commit],
     end_commit: git.objects.Commit,
+    crate_filter: CrateFilter,
 ) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
     """Generate pairs in range: (list(crates_added), list(crates_removed))."""
 
@@ -299,27 +390,31 @@ def crate_changes_in_commit_range(
         re.VERBOSE,
     )
     for path, lower_name, start_blob, end_blob in blobs_in_commit_range(
-        start_commit, end_commit
+        start_commit, end_commit, crate_filter
     ):
         if not rex.search(path):
             continue
         old = {crate.version: crate for crate in blob_crates(start_blob)}
         new = {crate.version: crate for crate in blob_crates(end_blob)}
+        filtered_versions = crate_filter.filter_crate_versions(
+            lower_name, set(old).union(new)
+        )
         # A removal occurs when a previously existing version is no longer
         # present.
         removed = [
             crate
             for version, crate in old.items()
-            if version not in new
+            if version in filtered_versions and version not in new
         ]
         # An addition is a new or updated crate file; it occurs when a new
         # version was not previously present or when an existing version has a
         # different hash value.
         added = []
         for version, crate in new.items():
-            old_crate = old.get(version)
-            if old_crate is None or old_crate.hash != crate.hash:
-                added.append(crate)
+            if version in filtered_versions:
+                old_crate = old.get(version)
+                if old_crate is None or old_crate.hash != crate.hash:
+                    added.append(crate)
         if added or removed:
             yield added, removed
 
@@ -328,6 +423,7 @@ def crate_changes_in_range(
     repo: git.Repo,
     start: str,
     end: str,
+    crate_filter: CrateFilter,
 ) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
     """Generate pairs in range: (list(crates_added), list(crates_removed))."""
     try:
@@ -336,7 +432,7 @@ def crate_changes_in_range(
     except git.exc.BadName as e:
         raise error.GitError(f"bad commit requested: {e}")
     yield from crate_changes_in_commit_range(
-        start_commit, end_commit
+        start_commit, end_commit, crate_filter
     )
 
 
@@ -977,6 +1073,20 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--filter",
+        action="append",
+        default=[],
+        help="""add given crate filter""",
+    )
+
+    parser.add_argument(
+        "--filter-file",
+        action="append",
+        default=[],
+        help="""add crate filters from FILTER_FILE""",
+    )
+
+    parser.add_argument(
         "commands",
         nargs="*",
         metavar="COMMAND",
@@ -990,6 +1100,7 @@ class Main(base.BaseMain):
         self._repo: Optional[git.Repo] = None
         self._crates_added: Optional[List[Crate]] = None
         self._crates_removed: Optional[List[Crate]] = None
+        self._crate_filter = CrateFilter()
 
     def _get_start(self) -> str:
         start = self.args.start
@@ -1040,6 +1151,7 @@ class Main(base.BaseMain):
                 self.get_repo(),
                 self.get_start(),
                 self.args.end,
+                self._crate_filter,
             ):
                 crates_added.extend(added)
                 crates_removed.extend(removed)
@@ -1231,7 +1343,30 @@ class Main(base.BaseMain):
         configure_index(self.get_repo(), self.args.server_url)
         mark(self.get_repo(), self.args.end)
 
+    def _add_filter(self, filter_str: str) -> None:
+        for pat in re.split(r"[,; ]+", filter_str):
+            self._crate_filter.add(pat)
+
+    def _setup_filters(self) -> None:
+        for filter_str in self.args.filter:
+            self._add_filter(filter_str)
+        for filter_file_path in self.args.filter_file:
+            try:
+                with open(filter_file_path) as f:
+                    for line in f:
+                        self._add_filter(line.strip())
+            except OSError:
+                raise error.UsageError(
+                    f"could not read FILTER_FILE {filter_file_path!r}"
+                )
+        if self._crate_filter.is_filtered():
+            patterns = self._crate_filter.patterns()
+            common.vprint(f"Using {len(patterns)} filters:")
+            for pat in patterns:
+                common.vprint(f"  {pat}")
+
     def _run(self) -> None:
+        self._setup_filters()
         if not self.args.start:
             self.args.start = "mark"
             self.args.allow_missing_start = True

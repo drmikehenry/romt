@@ -1394,6 +1394,62 @@ prefix is explained below).
 As an alternative, to use the crate.io API for downloading crates, set
 CRATES_URL to: https://crates.io/api/v1/crates/{crate}/{version}/download
 
+Crate filtering
+---------------
+
+The INDEX RANGE implies a set of changes (additions, modifications, or removals)
+made to the INDEX.  By default, all crates implied by the RANGE will be used.
+To restrict to a subset of those crates, crate filters may be used.
+
+A crate filter is of the general form ``crate_pattern@version_pattern``.
+Patterns use file glob syntax (as found in Python's ``fnmatch`` module):
+
+- ``*`` matches any sequence of zero or more characters.
+- ``?`` matches any single character.
+- ``[seq]`` matches any character in ``seq``.
+- ``[!seq]`` matches any character *not* in ``seq``.
+
+So, for example:
+
+- ``c*`` matches ``c``, ``c2``, and ``cat``, but not ``1cat``.
+- ``c?`` matches ``c1`` and ``c2``, but not ``c`` or ``cat``.
+- ``[ch]*[!g]`` matches ``cat``, ``hi``, and ``heat``, but not ``c``, ``bat`` or
+  ``bag``.
+
+Sequences may use ``-`` to imply a range; for example, ``[a-g]`` is the same as
+``[abcdefg]``.
+
+If a pattern is empty, it will be treated as ``*``.
+
+Operations that apply to the crates in RANGE will be limited by crate filters.
+For example, ``romt crate list --filter mycrate`` would list all versions of
+the crate named ``mycrate``, and ``romt crate list --filter mycrate@0.1.0``
+would list only version 0.1.0 of ``mycrate``.
+
+Use ``--filter FILTER`` to supply filter(s) directly on the command line.  Use
+``--filter-file FILTER_FILE`` to read filter(s) from one or more FILTER_FILE
+files (as if each line were given via ``--filter``).  Both ``--filter`` and
+``--filter-file`` may be given multiple times; their effects aggregate.
+
+A FILTER will be split on runs of spaces, commas, and semi-colons to make it
+easier to specify multiple filters in one ``--filter`` switch.  For example,
+these are equivalent::
+
+  romt crate list --filter 'a,b;c,; ,;d'
+  romt crate list --filter a --filter b --filter c --filter d
+
+If a filter contains ``@``, it will be split into
+``crate_pattern@version_pattern`` components; otherwise, the filter will be used
+for the ``crate_pattern`` portion and ``version_pattern`` is implied to be
+``*``.  For example, these pairs are equivalent::
+
+  mycrate     mycrate@*
+  mycrate@    mycrate@*
+  @           *@*
+  @1.0.?      *@1.0.?
+
+Crate filters are applied case-insensitively.
+
 CRATES_ROOT
 -----------
 
