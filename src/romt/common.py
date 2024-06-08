@@ -145,6 +145,22 @@ def make_dirs_for(path: Path) -> None:
         parent.mkdir(parents=True)
 
 
+def remove_empty_dirs(root_path: Path, dir_rel_path: str) -> None:
+    """Remove empty dirs from `root / dir_path` up to `root`."""
+    parts = re.split(r"[\\/]+", dir_rel_path)
+    # Do nothing with weird subdirectories.
+    if not parts or "" in parts or "." in parts or ".." in parts:
+        return
+
+    while parts:
+        dir_path = root_path.joinpath(*parts)
+        try:
+            dir_path.rmdir()
+        except OSError:
+            return
+        parts.pop()
+
+
 def log(log_file: Optional[IO[Any]], message: Any) -> None:
     if log_file is not None:
         log_file.write(f"{message}\n")

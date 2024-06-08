@@ -60,11 +60,12 @@ COMMAND values:
     init-import     setup INDEX and CRATES_ROOT for import scenario
     config          edit INDEX/config.json to point to mirror server
   Routine updates:
-    update          alias for ``pull download mark``
-    export          alias for ``pull download pack mark``
-    import          alias for ``unpack pull verify mark``
+    update          alias for ``pull prune download mark``
+    export          alias for ``pull prune download pack mark``
+    import          alias for ``unpack pull prune verify mark``
   Less common:
     pull            pull {INDEX_NAME} commits from origin into INDEX
+    prune           prune deleted .crate files from CRATES_ROOT across RANGE
     download        download .crate files to CRATES_ROOT across RANGE
     verify          verify .crate files in CRATES_ROOT across RANGE
     pack            pack RANGE of crates and INDEX commits into ARCHIVE
@@ -425,6 +426,7 @@ def list_crates(
 ) -> None:
     if show_hash:
         show_path = True
+
     def show(prefix: str, crate: Crate) -> None:
         parts = [prefix]
         if show_hash:
@@ -1092,6 +1094,7 @@ class Main(base.BaseMain):
     def get_commands(self) -> List[str]:
         valid_commands = [
             "pull",
+            "prune",
             "download",
             "verify",
             "pack",
@@ -1118,6 +1121,19 @@ class Main(base.BaseMain):
         repo = self.get_repo()
         fetch_origin(repo)
         merge_origin_master(repo)
+
+    def cmd_prune(self) -> None:
+        crates_root = get_crates_root_path(self.args.crates)
+        crates_config = _read_crates_config(crates_root)
+        prefix_style = _crates_config_prefix_style(crates_config)
+        for crate in self.get_crates_removed():
+            common.vprint(f"[prune] {crate.basename()}")
+            crate_rel_path = crate.rel_path(prefix_style)
+            crate_path = crates_root / crate_rel_path
+            crate_path.unlink(missing_ok=True)
+            common.remove_empty_dirs(
+                crates_root, os.path.dirname(crate_rel_path)
+            )
 
     def cmd_mark(self) -> None:
         self.forget_crates()
@@ -1230,11 +1246,11 @@ class Main(base.BaseMain):
             common.iprint(f"{command}...")
             if command in ("update", "export", "import"):
                 if command == "update":
-                    cmd = "pull download mark"
+                    cmd = "pull prune download mark"
                 elif command == "export":
-                    cmd = "pull download pack mark"
+                    cmd = "pull prune download pack mark"
                 else:
-                    cmd = "unpack pull verify mark"
+                    cmd = "unpack pull prune verify mark"
                 commands = cmd.split() + commands
 
             else:

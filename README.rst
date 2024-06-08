@@ -1545,6 +1545,17 @@ branch does not yet exist.  To avoid this, pre-create a ``working`` branch (with
 arbitrary content) before executing a ``pull`` command, and Romt will not switch
 ``HEAD`` to ``working``.
 
+Pruning
+-------
+
+At times, crates may be removed from the index.  If a previously downloaded file
+is deleted upstream, it may be pruned from the CRATES_ROOT tree (along with any
+now-empty subdirectories).
+
+The subset of crate files to prune is determined by the RANGE of commits
+(from START through END) in the INDEX.  Each file with a deletion implied by the
+changes to RANGE will be removed from CRATES_ROOT.
+
 Downloading
 -----------
 
@@ -1615,14 +1626,14 @@ corrupted and that no files in RANGE are missing.
 For each of the three main use cases, there is short command name that implies
 the needed steps:
 
-- ``update`` is the same as ``pull download mark``.  This is useful for the
+- ``update`` is the same as ``pull prune download mark``.  This is useful for the
   laptop scenario.
 
-- ``export`` is the same as ``pull download pack mark``.  This is useful for the
-  Export machine in the disconnected network scenario.
+- ``export`` is the same as ``pull prune download pack mark``.  This is useful
+  for the Export machine in the disconnected network scenario.
 
-- ``import`` is the same as ``unpack pull verify mark``.  This is useful for the
-  Import machine in the disconnected network scenario.
+- ``import`` is the same as ``unpack pull prune verify mark``.  This is useful
+  for the Import machine in the disconnected network scenario.
 
 Listing crate files
 -------------------

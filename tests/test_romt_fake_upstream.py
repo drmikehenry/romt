@@ -12,6 +12,7 @@ import pytest
 import toml
 
 import romt.cli
+import romt.common
 import romt.crate
 
 
@@ -152,7 +153,8 @@ def update_crate(
             entries[entry["vers"]] = entry
 
     sha256sum = hashlib.sha256(crate_data).hexdigest()
-    crate_path = crates_path / prefix / name / f"{name}-{version}.crate"
+    crate_rel_dir_path = f"{prefix}/{name}"
+    crate_path = crates_path / crate_rel_dir_path / f"{name}-{version}.crate"
     if crate_data:
         write_file_bytes(crate_path, crate_data)
         entry = make_crate_entry(name, version, sha256sum)
@@ -160,6 +162,7 @@ def update_crate(
     else:
         action = "Delete"
         crate_path.unlink(missing_ok=True)
+        romt.common.remove_empty_dirs(crates_path, crate_rel_dir_path)
         if version in entries:
             del entries[version]
 
@@ -383,6 +386,10 @@ def test_crates(
     add_crate(upstream_repo, upstream_crates_path, "abcd", "0.2.0")
     update_crate(
         upstream_repo, upstream_crates_path, "abcd", "0.1.0", b"2nd\n"
+    )
+    remove_crate(upstream_repo, upstream_crates_path, "abcdefgh", "0.1.0")
+    run_export_import(
+        upstream_crates_path, inet_path, inet_args, offline_path, offline_args
     )
 
 
