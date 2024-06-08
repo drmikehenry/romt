@@ -28,7 +28,7 @@ RUN pipx install "poetry==$ROMT_POETRY_VERSION" \
 
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
 
-# Copy in project dependency specification that don't change often; this
+# Copy in project dependency specifications that don't change often; this
 # speeds up incremental rebuilding of the container.
 COPY pyproject.toml poetry.lock ./
 RUN poetry install
