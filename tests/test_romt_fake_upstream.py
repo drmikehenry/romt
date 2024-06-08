@@ -408,12 +408,8 @@ toolchain_artifact_names_1_76_0 = set(
     cargo-1.76.0-x86_64-unknown-linux-gnu.tar.xz
     cargo-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
     channel-rust-1.76.0.toml
-    channel-rust-1.76.0.toml
-    channel-rust-1.76.0.toml.sha256
     channel-rust-1.76.0.toml.sha256
     channel-rust-stable.toml
-    channel-rust-stable.toml
-    channel-rust-stable.toml.sha256
     channel-rust-stable.toml.sha256
     clippy-1.76.0-x86_64-unknown-linux-gnu.tar.xz
     clippy-1.76.0-x86_64-unknown-linux-gnu.tar.xz.sha256
