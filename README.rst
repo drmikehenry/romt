@@ -1624,10 +1624,10 @@ the needed steps:
 - ``import`` is the same as ``unpack pull verify mark``.  This is useful for the
   Import machine in the disconnected network scenario.
 
-Listing downloaded crate files
-------------------------------
+Listing crate files
+-------------------
 
-The ``romt crate list`` command prints the filename for each crate
+The ``romt crate list`` command prints the name and version for each crate
 included in RANGE within INDEX, independent of whether those crate files have
 been downloaded.
 
@@ -1642,11 +1642,50 @@ With example output::
 
   pull...
   list...
-  gc-0.3.4.crate
-  brs-0.2.0.crate
-  cxx-0.3.1.crate
-  irc-0.14.0.crate
-  scd-0.1.3.crate
+  gc@0.3.4
+  brs@0.2.0
+  cxx@0.3.1
+  irc@0.14.0
+  -scd@0.1.3
+  [...]
+
+Any crates in the RANGE which have been deleted will be listed with a leading
+hyphen; in the example above, ``scd@0.1.3`` has been deleted.
+
+With the ``--show-path`` switch, the ``.crate`` file names will be listed with
+their relative paths, e.g.:
+
+.. code-block:: sh
+
+  romt crate pull list --show-path
+
+With example output::
+
+  pull...
+  list...
+  2/gc/gc-0.3.4.crate
+  3/b/brs/brs-0.2.0.crate
+  3/c/cxx/cxx-0.3.1.crate
+  3/i/irc/irc-0.14.0.crate
+  -3/s/scd/scd-0.1.3.crate
+  [...]
+
+With the ``--show-hash`` switch (which implies the ``--show-path`` switch), the
+``.crate`` files will be listed with their SHA256 hashes as well, e.g.:
+
+.. code-block:: sh
+
+  romt crate pull list --show-hash
+
+With example output::
+
+  pull...
+  list...
+  f4917b7233397091baf9136eec3c669c8551b097d69ca2b00a2606e5f07641d1 *2/gc/gc-0.3.4.crate
+  f1e5e58ddd0cfe68b71d5769bec054a98b3adcb3603227b016b2cc6aebee5555 *3/b/brs/brs-0.2.0.crate
+  e2fe8aa3d549e84c89e72a8621281a3f90a6ea771cacf7ed2553f464e49294e0 *3/c/cxx/cxx-0.3.1.crate
+  245071fa25b5ca1a9995cbc18a5f0bf64e514590525ae96e7d626fe40498440d *3/i/irc/irc-0.14.0.crate
+  -38d847429df942e4db01c64d4119d4d0b9cde270336d2aa4848e80ec8f418b8c *3/s/scd/scd-0.1.3.crate
   [...]
 
 ``crate`` scenarios

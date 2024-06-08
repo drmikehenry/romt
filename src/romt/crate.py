@@ -70,7 +70,7 @@ COMMAND values:
     pack            pack RANGE of crates and INDEX commits into ARCHIVE
     mark            set branch ``mark`` to match END of RANGE
     unpack          unpack {INDEX_BUNDLE_NAME} and CRATES_ROOT from ARCHIVE
-    list            print crate names across RANGE
+    list            print crates across RANGE
 
 When multiple COMMANDs are given, they share all option values.
 
@@ -415,9 +415,31 @@ def mark(repo: git.Repo, end: str) -> None:
             repo.create_head(f"refs/heads/{branch}", end, force=True)
 
 
-def list_crates(crates: List[Crate]) -> None:
+def list_crates(
+    crates: List[Crate],
+    crates_removed: List[Crate],
+    *,
+    prefix_style: PrefixStyle,
+    show_path: bool,
+    show_hash: bool,
+) -> None:
+    if show_hash:
+        show_path = True
+    def show(prefix: str, crate: Crate) -> None:
+        parts = [prefix]
+        if show_hash:
+            parts.append(crate.hash)
+            parts.append(" *")
+        if show_path:
+            parts.append(str(crate.rel_path(prefix_style)))
+        else:
+            parts.append(f"{crate.name}@{crate.version}")
+        common.eprint("".join(parts))
+
     for crate in crates:
-        common.iprint(crate.basename())
+        show("", crate)
+    for crate in crates_removed:
+        show("-", crate)
 
 
 def _process_crates(
@@ -941,6 +963,18 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--show-path",
+        action="store_true",
+        help="show `.crate` paths for `list`",
+    )
+
+    parser.add_argument(
+        "--show-hash",
+        action="store_true",
+        help="show `.crate` hashes for `list` (implies `--show-path`)",
+    )
+
+    parser.add_argument(
         "commands",
         nargs="*",
         metavar="COMMAND",
@@ -1103,7 +1137,16 @@ class Main(base.BaseMain):
         )
 
     def cmd_list(self) -> None:
-        list_crates(self.get_crates())
+        crates_root = get_crates_root_path(self.args.crates)
+        crates_config = _read_crates_config(crates_root)
+        prefix_style = _crates_config_prefix_style(crates_config)
+        list_crates(
+            self.get_crates(),
+            self.get_crates_removed(),
+            prefix_style=prefix_style,
+            show_path=self.args.show_path,
+            show_hash=self.args.show_hash,
+        )
 
     def cmd_download(self) -> None:
         download_crates(
