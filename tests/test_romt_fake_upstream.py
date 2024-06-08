@@ -125,23 +125,66 @@ def make_crate_entry(
     )
 
 
-def add_crate(
-    repo: git.Repo, crates_path: Path, name: str, version: str
+def update_crate(
+    repo: git.Repo,
+    crates_path: Path,
+    name: str,
+    version: str,
+    crate_data: bytes,
 ) -> None:
+    """Add/remove/update index for given crate.
+
+    If `crate_data` is empty, remove the crate; otherwise, add (if not already
+    present) or update.
+    """
     prefix = romt.crate.crate_prefix_from_name(
         name, romt.crate.PrefixStyle.LOWER
     )
-    crate_path = crates_path / prefix / name / f"{name}-{version}.crate"
-    crate_data = (crate_path.name + "\n").encode()
-    write_file_bytes(crate_path, crate_data)
 
+    action = "Add"
     work_path = repo_work_path(repo)
     entry_path = work_path / prefix / name
+    entries: T.Dict[str, T.Any] = {}
+    if entry_path.is_file():
+        action = "Update"
+        for line in entry_path.read_text().splitlines():
+            entry = json.loads(line)
+            entries[entry["vers"]] = entry
+
     sha256sum = hashlib.sha256(crate_data).hexdigest()
-    entry = make_crate_entry(name, version, sha256sum)
-    append_file_line(entry_path, json.dumps(entry))
-    repo.index.add(str(entry_path))
-    repo.index.commit(f"add `{crate_path.name}`")
+    crate_path = crates_path / prefix / name / f"{name}-{version}.crate"
+    if crate_data:
+        write_file_bytes(crate_path, crate_data)
+        entry = make_crate_entry(name, version, sha256sum)
+        entries[version] = entry
+    else:
+        action = "Delete"
+        crate_path.unlink(missing_ok=True)
+        if version in entries:
+            del entries[version]
+
+    lines = [json.dumps(entry) + "\n" for entry in entries.values()]
+    if lines:
+        write_file_text(entry_path, "".join(lines))
+        repo.index.add(str(entry_path))
+    else:
+        repo.index.remove(str(entry_path))
+        entry_path.unlink(missing_ok=True)
+    repo.index.commit(f"{action} `{crate_path.name}`")
+
+
+def add_crate(
+    repo: git.Repo, crates_path: Path, name: str, version: str
+) -> None:
+    update_crate(
+        repo, crates_path, name, version, f"{name}-{version}.crate\n".encode()
+    )
+
+
+def remove_crate(
+    repo: git.Repo, crates_path: Path, name: str, version: str
+) -> None:
+    update_crate(repo, crates_path, name, version, b"")
 
 
 CRATE_VERSIONS = [
@@ -269,24 +312,15 @@ def crate_must_run(root_path: Path, args: T.List[str]) -> None:
     assert romt.cli.run(crate_args + args) == 0
 
 
-def test_crates(
-    upstream_path: Path, inet_path: Path, offline_path: Path
+def run_export_import(
+    upstream_crates_path: Path,
+    inet_path: Path,
+    inet_args: T.List[str],
+    offline_path: Path,
+    offline_args: T.List[str],
 ) -> None:
-    upstream_crates_path = upstream_path / "crates"
     upstream_files_rel = set(walk_files_rel(upstream_crates_path))
 
-    crates_template = "crates/{lowerprefix}/{crate}/{crate}-{version}.crate"
-    archive_path = inet_path / "crates.tar.gz"
-    inet_args = [
-        "--crates-url",
-        f"{upstream_path}/{crates_template}",
-        "--index-url",
-        f"{upstream_path}/git/crates.io-index",
-        "--archive",
-        f"{archive_path}",
-    ]
-
-    crate_must_run(inet_path, inet_args + ["init"])
     crate_must_run(inet_path, inet_args + ["export"])
 
     inet_crates_path = inet_path / "crates"
@@ -300,16 +334,6 @@ def test_crates(
         inet_files_rel,
     )
 
-    offline_args = [
-        "--crates-url",
-        f"{inet_path}/{crates_template}",
-        "--index-url",
-        f"{inet_path}/git/crates.io-index",
-        "--archive",
-        f"{archive_path}",
-    ]
-
-    crate_must_run(offline_path, offline_args + ["init-import"])
     crate_must_run(offline_path, offline_args + ["import"])
 
     offline_crates_path = offline_path / "crates"
@@ -321,6 +345,44 @@ def test_crates(
         inet_files_rel,
         offline_crates_path,
         offline_files_rel,
+    )
+
+
+def test_crates(
+    upstream_path: Path, inet_path: Path, offline_path: Path
+) -> None:
+    upstream_repo = git.Repo(f"{upstream_path}/git/crates.io-index")
+    upstream_crates_path = upstream_path / "crates"
+    crates_template = "crates/{lowerprefix}/{crate}/{crate}-{version}.crate"
+    archive_path = inet_path / "crates.tar.gz"
+
+    inet_args = [
+        "--crates-url",
+        f"{upstream_path}/{crates_template}",
+        "--index-url",
+        f"{upstream_path}/git/crates.io-index",
+        "--archive",
+        f"{archive_path}",
+    ]
+    offline_args = [
+        "--crates-url",
+        f"{inet_path}/{crates_template}",
+        "--index-url",
+        f"{inet_path}/git/crates.io-index",
+        "--archive",
+        f"{archive_path}",
+    ]
+
+    crate_must_run(inet_path, inet_args + ["init"])
+    crate_must_run(offline_path, offline_args + ["init-import"])
+
+    run_export_import(
+        upstream_crates_path, inet_path, inet_args, offline_path, offline_args
+    )
+
+    add_crate(upstream_repo, upstream_crates_path, "abcd", "0.2.0")
+    update_crate(
+        upstream_repo, upstream_crates_path, "abcd", "0.1.0", b"2nd\n"
     )
 
 

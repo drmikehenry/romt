@@ -213,24 +213,27 @@ def crate_rel_path_from_name_version(
 
 
 def blobs_in_commit_range(
-    start_commit: Optional[git.objects.Commit], end_commit: git.objects.Commit
-) -> Generator[Tuple[str, bytes, bytes], None, None]:
-    """Generate (blob_path, start_blob, end_blob)."""
+    start_commit: Optional[git.objects.Commit],
+    end_commit: git.objects.Commit,
+) -> Generator[Tuple[str, str, bytes, bytes], None, None]:
+    """Generate (blob_path, lower_name, start_blob, end_blob)."""
     if start_commit is not None:
         for diff in end_commit.diff(start_commit):
-            # diff.a_xxx goes with end_commit.
-            if diff.a_blob:
-                a_blob = diff.a_blob.data_stream.read()
-                if diff.b_blob:
-                    b_blob = diff.b_blob.data_stream.read()
-                else:
-                    b_blob = b""
-                yield diff.a_path, b_blob, a_blob
+            blob_path = diff.a_path or diff.b_path
+            lower_name = os.path.basename(blob_path).lower()
+            # diff.a_xxx goes with `end_commit`.
+            # diff.b_xxx goes with `start_commit`.
+            # I.e., time-wise, `b` changes to become `a`.
+            a_blob = diff.a_blob.data_stream.read() if diff.a_blob else b""
+            b_blob = diff.b_blob.data_stream.read() if diff.b_blob else b""
+            yield blob_path, lower_name, b_blob, a_blob
     else:
         for item in end_commit.tree.traverse():
             if getattr(item, "type") == "blob":
                 blob = typing.cast(git.objects.Blob, item)
-                yield str(blob.path), b"", blob.data_stream.read()
+                blob_path = str(blob.path)
+                lower_name = os.path.basename(blob_path).lower()
+                yield blob_path, lower_name, b"", blob.data_stream.read()
 
 
 class Crate:
@@ -276,10 +279,11 @@ def blob_crates(blob: bytes) -> Generator[Crate, None, None]:
         yield crate
 
 
-def crates_in_commit_range(
-    start_commit: Optional[git.objects.Commit], end_commit: git.objects.Commit
-) -> Generator[Crate, None, None]:
-    """Generate newly specified crates."""
+def crate_changes_in_commit_range(
+    start_commit: Optional[git.objects.Commit],
+    end_commit: git.objects.Commit,
+) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
+    """Generate pairs in range: (list(crates_added), list(crates_removed))."""
 
     rex = re.compile(
         r"""
@@ -293,26 +297,46 @@ def crates_in_commit_range(
         """,
         re.VERBOSE,
     )
-    for path, start_blob, end_blob in blobs_in_commit_range(
+    for path, lower_name, start_blob, end_blob in blobs_in_commit_range(
         start_commit, end_commit
     ):
         if not rex.search(path):
             continue
-        old_versions = {crate.version for crate in blob_crates(start_blob)}
-        for crate in blob_crates(end_blob):
-            if crate.version not in old_versions:
-                yield crate
+        old = {crate.version: crate for crate in blob_crates(start_blob)}
+        new = {crate.version: crate for crate in blob_crates(end_blob)}
+        # A removal occurs when a previously existing version is no longer
+        # present.
+        removed = [
+            crate
+            for version, crate in old.items()
+            if version not in new
+        ]
+        # An addition is a new or updated crate file; it occurs when a new
+        # version was not previously present or when an existing version has a
+        # different hash value.
+        added = []
+        for version, crate in new.items():
+            old_crate = old.get(version)
+            if old_crate is None or old_crate.hash != crate.hash:
+                added.append(crate)
+        if added or removed:
+            yield added, removed
 
 
-def crates_in_range(
-    repo: git.Repo, start: str, end: str
-) -> Generator[Crate, None, None]:
+def crate_changes_in_range(
+    repo: git.Repo,
+    start: str,
+    end: str,
+) -> Generator[Tuple[List[Crate], List[Crate]], None, None]:
+    """Generate pairs in range: (list(crates_added), list(crates_removed))."""
     try:
         start_commit = repo.commit(start) if start else None
         end_commit = repo.commit(end)
     except git.exc.BadName as e:
         raise error.GitError(f"bad commit requested: {e}")
-    yield from crates_in_commit_range(start_commit, end_commit)
+    yield from crate_changes_in_commit_range(
+        start_commit, end_commit
+    )
 
 
 def git_bundle_create(
@@ -928,7 +952,8 @@ class Main(base.BaseMain):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__(args)
         self._repo: Optional[git.Repo] = None
-        self._crates: Optional[List[Crate]] = None
+        self._crates_added: Optional[List[Crate]] = None
+        self._crates_removed: Optional[List[Crate]] = None
 
     def _get_start(self) -> str:
         start = self.args.start
@@ -967,20 +992,38 @@ class Main(base.BaseMain):
         return True
 
     def forget_crates(self) -> None:
-        self._crates = None
+        self._crates_added = None
+        self._crates_removed = None
+
+    def _get_crates_changed(self) -> Tuple[List[Crate], List[Crate]]:
+        if self._crates_added is None or self._crates_removed is None:
+            common.vprint("[calculating crate list]")
+            crates_added = []
+            crates_removed = []
+            for added, removed in crate_changes_in_range(
+                self.get_repo(),
+                self.get_start(),
+                self.args.end,
+            ):
+                crates_added.extend(added)
+                crates_removed.extend(removed)
+            crates_added.sort(key=lambda crate: crate.ident)
+            crates_removed.sort(key=lambda crate: crate.ident)
+            common.vprint(
+                f"[{len(crates_added)} crates added, "
+                f"{len(crates_removed)} crates removed in range]"
+            )
+            self._crates_added = crates_added
+            self._crates_removed = crates_removed
+        return self._crates_added, self._crates_removed
 
     def get_crates(self) -> List[Crate]:
-        if self._crates is None:
-            common.vprint("[calculating crate list]")
-            crate_iter = crates_in_range(
-                self.get_repo(), self.get_start(), self.args.end
-            )
-            crates_by_ident = {crate.ident: crate for crate in crate_iter}
-            self._crates = sorted(
-                crates_by_ident.values(), key=lambda crate: crate.ident
-            )
-            common.vprint(f"[{len(self._crates)} crates in range]")
-        return self._crates
+        crates_added, _crates_removed = self._get_crates_changed()
+        return crates_added
+
+    def get_crates_removed(self) -> List[Crate]:
+        _crates_added, crates_removed = self._get_crates_changed()
+        return crates_removed
 
     def get_bundle_path(self) -> Path:
         if self.args.bundle_path:
