@@ -351,6 +351,26 @@ class Crate:
             self.name, self.version, prefix_style
         )
 
+    def report(
+        self,
+        *,
+        prefix_style: PrefixStyle,
+        show_path: bool,
+        show_hash: bool,
+        removed: bool = False,
+    ) -> str:
+        if show_hash:
+            show_path = True
+        parts = ["-" if removed else ""]
+        if show_hash:
+            parts.append(self.hash)
+            parts.append(" *")
+        if show_path:
+            parts.append(str(self.rel_path(prefix_style)))
+        else:
+            parts.append(f"{self.name}@{self.version}")
+        return "".join(parts)
+
 
 def blob_lines(blob: bytes) -> T.Generator[str, None, None]:
     yield from blob.decode("utf8").splitlines()
@@ -523,21 +543,23 @@ def list_crates(
     if show_hash:
         show_path = True
 
-    def show(prefix: str, crate: Crate) -> None:
-        parts = [prefix]
-        if show_hash:
-            parts.append(crate.hash)
-            parts.append(" *")
-        if show_path:
-            parts.append(str(crate.rel_path(prefix_style)))
-        else:
-            parts.append(f"{crate.name}@{crate.version}")
-        common.eprint("".join(parts))
-
     for crate in crates:
-        show("", crate)
+        common.eprint(
+            crate.report(
+                prefix_style=prefix_style,
+                show_path=show_path,
+                show_hash=show_hash,
+            )
+        )
     for crate in crates_removed:
-        show("-", crate)
+        common.eprint(
+            crate.report(
+                prefix_style=prefix_style,
+                show_path=show_path,
+                show_hash=show_hash,
+                removed=True,
+            )
+        )
 
 
 def _process_crates(
