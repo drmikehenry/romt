@@ -572,6 +572,8 @@ def _process_crates(
     *,
     keep_going: bool,
     assume_ok: bool,
+    show_path: bool,
+    show_hash: bool,
 ) -> None:
     good_crates_file = common.open_optional(good_crates_log_path, "w")
     bad_crates_file = common.open_optional(bad_crates_log_path, "w")
@@ -588,8 +590,8 @@ def _process_crates(
         nonlocal num_good_crates, num_bad_crates
         rel_path = crate.rel_path(prefix_style)
         path = crates_root / rel_path
-        prefix = crate_prefix_from_name(crate.name, PrefixStyle.MIXED)
-        lower_prefix = crate_prefix_from_name(crate.name, PrefixStyle.LOWER)
+        prefix = crate.prefix(PrefixStyle.MIXED)
+        lower_prefix = crate.prefix(PrefixStyle.LOWER)
         is_good = False
         try:
             if dl_template is None:
@@ -614,10 +616,24 @@ def _process_crates(
 
         if is_good:
             num_good_crates += 1
-            common.log(good_crates_file, path)
+            common.log(
+                good_crates_file,
+                crate.report(
+                    prefix_style=prefix_style,
+                    show_path=show_path,
+                    show_hash=show_hash,
+                ),
+            )
         else:
             num_bad_crates += 1
-            common.log(bad_crates_file, path)
+            common.log(
+                bad_crates_file,
+                crate.report(
+                    prefix_style=prefix_style,
+                    show_path=show_path,
+                    show_hash=show_hash,
+                ),
+            )
 
         limiter.release_on_behalf_of(crate)
 
@@ -653,6 +669,8 @@ def download_crates(
     *,
     keep_going: bool,
     assume_ok: bool,
+    show_path: bool,
+    show_hash: bool,
 ) -> None:
     _process_crates(
         downloader,
@@ -663,6 +681,8 @@ def download_crates(
         bad_crates_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
+        show_path=show_path,
+        show_hash=show_hash,
     )
 
 
@@ -675,6 +695,8 @@ def verify_crates(
     *,
     keep_going: bool,
     assume_ok: bool,
+    show_path: bool,
+    show_hash: bool,
 ) -> None:
     _process_crates(
         downloader,
@@ -685,6 +707,8 @@ def verify_crates(
         bad_crates_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
+        show_path=show_path,
+        show_hash=show_hash,
     )
 
 
@@ -1089,13 +1113,19 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--show-path",
         action="store_true",
-        help="show `.crate` paths for `list`",
+        help=(
+            "show `.crate` paths for `list` and "
+            "`--bad-crates`/`--good-crates`"
+        ),
     )
 
     parser.add_argument(
         "--show-hash",
         action="store_true",
-        help="show `.crate` hashes for `list` (implies `--show-path`)",
+        help=(
+            "show `.crate` hashes for `list` and "
+            "`--bad-crates`/`--good-crates` (implies `--show-path`)"
+        ),
     )
 
     parser.add_argument(
@@ -1312,6 +1342,8 @@ class Main(base.BaseMain):
             self.args.bad_crates,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
+            show_path=self.args.show_path,
+            show_hash=self.args.show_hash,
         )
 
     def cmd_verify(self) -> None:
@@ -1323,6 +1355,8 @@ class Main(base.BaseMain):
             self.args.bad_crates,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
+            show_path=self.args.show_path,
+            show_hash=self.args.show_hash,
         )
 
     def cmd_pack(self) -> None:

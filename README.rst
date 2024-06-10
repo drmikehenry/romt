@@ -1633,6 +1633,16 @@ any crates failed to download.  The option ``--keep-going`` allows Romt to
 continue past download failures to subsequent steps (e.g., packing an archive
 file).
 
+Use ``--good-crates GOOD_CRATES`` to write the list of "good" crates into the
+file GOOD_CRATES.  Similarly, use ``--bad-crates BAD_CRATES`` to write the list
+of "bad" crates into the file BAD_CRATES.  By default, the output for these
+files will be of the form ``crate@version``. With the ``--show-path`` switch,
+the ``.crate`` file names will be listed with their relative paths.  With the
+``--show-hash`` switch (which implies the ``--show-path`` switch), the
+``.crate`` files will be listed with their SHA256 hashes as well.  This is the
+same format as provided by ``romt crate list``; see examples in the section
+"Listing crate files".
+
 Packing/unpacking
 -----------------
 
@@ -1675,6 +1685,10 @@ The ``romt crate verify`` command checks the integrity of each downloaded crate
 included in RANGE within INDEX.  Using the SHA256 hash values contained in INDEX
 for each crate file, Romt ensures that the downloaded crate files have not been
 corrupted and that no files in RANGE are missing.
+
+``romt crate verify`` supports the ``--good-crates`` and ``--bad-crates``
+switches in the same way as ``romt crate download``; see the section
+"Downloading" for details.
 
 ``update``, ``export``, and ``import``
 --------------------------------------
