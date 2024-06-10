@@ -1708,7 +1708,6 @@ INDEX and then ``list``:
 With example output::
 
   pull...
-  list...
   gc@0.3.4
   brs@0.2.0
   cxx@0.3.1
@@ -1729,7 +1728,6 @@ their relative paths, e.g.:
 With example output::
 
   pull...
-  list...
   2/gc/gc-0.3.4.crate
   3/b/brs/brs-0.2.0.crate
   3/c/cxx/cxx-0.3.1.crate
@@ -1747,7 +1745,6 @@ With the ``--show-hash`` switch (which implies the ``--show-path`` switch), the
 With example output::
 
   pull...
-  list...
   f4917b7233397091baf9136eec3c669c8551b097d69ca2b00a2606e5f07641d1 *2/gc/gc-0.3.4.crate
   f1e5e58ddd0cfe68b71d5769bec054a98b3adcb3603227b016b2cc6aebee5555 *3/b/brs/brs-0.2.0.crate
   e2fe8aa3d549e84c89e72a8621281a3f90a6ea771cacf7ed2553f464e49294e0 *3/c/cxx/cxx-0.3.1.crate

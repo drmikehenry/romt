@@ -1378,7 +1378,9 @@ class Main(base.BaseMain):
 
         while commands:
             command = commands.pop(0)
-            common.iprint(f"{command}...")
+            # Don't pollute `stdout` for `crate list`.
+            if command != "list":
+                common.iprint(f"{command}...")
             if command in ("update", "export", "import"):
                 if command == "update":
                     cmd = "pull prune download mark"
