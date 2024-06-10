@@ -1752,6 +1752,15 @@ With example output::
   -38d847429df942e4db01c64d4119d4d0b9cde270336d2aa4848e80ec8f418b8c *3/s/scd/scd-0.1.3.crate
   [...]
 
+Because the output is in the format expected by the ``sha256sum`` utility, you
+can use the output of ``romt crate list --show-hash`` to verify all crate files
+as follows:
+
+.. code-block:: sh
+
+  romt crate list --start 0 --show-hash > crates.sha256
+  (cd crates; sha256sum -c ../crates.sha256)
+
 ``crate`` scenarios
 --------------------
 
