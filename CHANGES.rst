@@ -2,6 +2,44 @@
 History
 *******
 
+Version 0.7.0
+=============
+
+- Support crate file deletion and modification.
+
+  - Previously, Romt did not expect crates to be removed or modified once
+    published; however, crates may in fact be removed from crates.io in certain
+    circumstances, and after removal a crate may be re-published with a
+    different hash.
+
+  - Romt now properly handles deleted and modified crates via the newly added
+    ``romt crate prune`` command (which is implied by the ``romt crate``
+    commands ``update``, ``export``, and ``import``).  See the "Crate file
+    cleanup" section of ``README.md`` for information on cleaning up any
+    modified or obsolete ``.crate`` files in an existing ``crates/`` directory.
+
+- Enhance the ``romt crate list`` command:
+
+  - Support three methods of displaying crates:
+
+    - ``crate@version`` (the new default format).
+    - ``rel/path/to/crate-version.crate`` (via ``--show-path``).
+    - ``<SHA256SUM> *rel/path/to/crate-version.crate`` (via ``--show-hash``).
+
+  - Also display removed crates with a leading ``-``.
+
+- For ``romt crate download`` and ``romt crate verify``, rename the
+  ``--good-paths`` and ``--bad-paths`` switches to be ``--good-crates`` and
+  ``--bad-crates``, and use the ``--show-path`` and ``--show-hash`` switches
+  from ``romt crate list`` to control the output format.
+
+- Support crate filtering via ``--filter FILTER`` and ``--filter-file
+  FILTER_FILE``.  This allows selective filtering of the crates implied by the
+  RANGE of crates in the INDEX.  Thus, for example, a single crate of a
+  particular version may be downloaded, verified, listed, etc., e.g.::
+
+    romt crate --start 0 --filter some_crate@1.2.3 list
+
 Version 0.6.1
 =============
 
