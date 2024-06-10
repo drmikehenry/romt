@@ -545,17 +545,17 @@ def _process_crates(
     dl_template: T.Optional[str],
     crates: T.List[Crate],
     crates_root: Path,
-    good_paths_log_path: str,
-    bad_paths_log_path: str,
+    good_crates_log_path: str,
+    bad_crates_log_path: str,
     *,
     keep_going: bool,
     assume_ok: bool,
 ) -> None:
-    good_paths_file = common.open_optional(good_paths_log_path, "w")
-    bad_paths_file = common.open_optional(bad_paths_log_path, "w")
+    good_crates_file = common.open_optional(good_crates_log_path, "w")
+    bad_crates_file = common.open_optional(bad_crates_log_path, "w")
 
-    num_good_paths = 0
-    num_bad_paths = 0
+    num_good_crates = 0
+    num_bad_crates = 0
 
     limiter = downloader.new_limiter()
 
@@ -563,7 +563,7 @@ def _process_crates(
     prefix_style = _crates_config_prefix_style(crates_config)
 
     async def _process_one(crate: Crate) -> None:
-        nonlocal num_good_paths, num_bad_paths
+        nonlocal num_good_crates, num_bad_crates
         rel_path = crate.rel_path(prefix_style)
         path = crates_root / rel_path
         prefix = crate_prefix_from_name(crate.name, PrefixStyle.MIXED)
@@ -591,11 +591,11 @@ def _process_crates(
             common.eprint(e)
 
         if is_good:
-            num_good_paths += 1
-            common.log(good_paths_file, path)
+            num_good_crates += 1
+            common.log(good_crates_file, path)
         else:
-            num_bad_paths += 1
-            common.log(bad_paths_file, path)
+            num_bad_crates += 1
+            common.log(bad_crates_file, path)
 
         limiter.release_on_behalf_of(crate)
 
@@ -610,12 +610,14 @@ def _process_crates(
 
     downloader.run_job(_process_inner)
 
-    common.iprint(f"{num_bad_paths} bad paths, {num_good_paths} good paths")
+    common.iprint(
+        f"{num_bad_crates} bad_crates, {num_good_crates} good_crates"
+    )
 
-    common.close_optional(good_paths_file)
-    common.close_optional(bad_paths_file)
+    common.close_optional(good_crates_file)
+    common.close_optional(bad_crates_file)
 
-    if num_bad_paths > 0 and not keep_going:
+    if num_bad_crates > 0 and not keep_going:
         raise error.AbortError()
 
 
@@ -624,8 +626,8 @@ def download_crates(
     dl_template: str,
     crates: T.List[Crate],
     crates_root: Path,
-    good_paths_log_path: str,
-    bad_paths_log_path: str,
+    good_crates_log_path: str,
+    bad_crates_log_path: str,
     *,
     keep_going: bool,
     assume_ok: bool,
@@ -635,8 +637,8 @@ def download_crates(
         dl_template,
         crates,
         crates_root,
-        good_paths_log_path,
-        bad_paths_log_path,
+        good_crates_log_path,
+        bad_crates_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
     )
@@ -646,8 +648,8 @@ def verify_crates(
     downloader: romt.download.Downloader,
     crates: T.List[Crate],
     crates_root: Path,
-    good_paths_log_path: str,
-    bad_paths_log_path: str,
+    good_crates_log_path: str,
+    bad_crates_log_path: str,
     *,
     keep_going: bool,
     assume_ok: bool,
@@ -657,8 +659,8 @@ def verify_crates(
         None,
         crates,
         crates_root,
-        good_paths_log_path,
-        bad_paths_log_path,
+        good_crates_log_path,
+        bad_crates_log_path,
         keep_going=keep_going,
         assume_ok=assume_ok,
     )
@@ -671,8 +673,8 @@ def pack(
     archive_path: Path,
     keep_going: bool,
 ) -> None:
-    num_good_paths = 0
-    num_bad_paths = 0
+    num_good_crates = 0
+    num_bad_crates = 0
 
     crates_config = _read_crates_config(crates_root)
     prefix_style = _crates_config_prefix_style(crates_config)
@@ -699,14 +701,16 @@ def pack(
             try:
                 common.vprint(f"[pack] {crate.basename()}")
                 tar_f.add(str(path), packed_name)
-                num_good_paths += 1
+                num_good_crates += 1
             except FileNotFoundError:
-                num_bad_paths += 1
+                num_bad_crates += 1
                 common.eprint(f"Error: Missing {crate.basename()}")
                 if not keep_going:
                     raise error.AbortError()
 
-    common.iprint(f"{num_bad_paths} bad paths, {num_good_paths} good paths")
+    common.iprint(
+        f"{num_bad_crates} bad crates, {num_good_crates} good crates"
+    )
 
 
 def unpack(
@@ -983,17 +987,17 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "--good-paths",
+        "--good-crates",
         action="store",
-        metavar="GOOD_PATHS",
-        help="record successful paths to file GOOD_PATHS",
+        metavar="GOOD_CRATES",
+        help="record successful crates to file GOOD_CRATES",
     )
 
     parser.add_argument(
-        "--bad-paths",
+        "--bad-crates",
         action="store",
-        metavar="BAD_PATHS",
-        help="record bad paths to file BAD_PATHS",
+        metavar="BAD_CRATES",
+        help="record bad crates to file BAD_CRATES",
     )
 
     parser.add_argument(
@@ -1282,8 +1286,8 @@ class Main(base.BaseMain):
             self.args.crates_url,
             self.get_crates(),
             get_crates_root_path(self.args.crates),
-            self.args.good_paths,
-            self.args.bad_paths,
+            self.args.good_crates,
+            self.args.bad_crates,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
         )
@@ -1293,8 +1297,8 @@ class Main(base.BaseMain):
             self.downloader,
             self.get_crates(),
             get_crates_root_path(self.args.crates),
-            self.args.good_paths,
-            self.args.bad_paths,
+            self.args.good_crates,
+            self.args.bad_crates,
             keep_going=self.args.keep_going,
             assume_ok=self.args.assume_ok,
         )
