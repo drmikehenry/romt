@@ -1808,6 +1808,80 @@ e.g.:
 
       romt crate import
 
+Crate file cleanup
+------------------
+
+Prior to Romt version 0.7.0, Romt did not expect crates to be removed or
+modified once published; however, crates may in fact be removed from crates.io
+in certain circumstances, and after removal a crate may be re-published with a
+different hash.  With prior versions of Romt, crates deleted from the INDEX were
+not deleted from the ``crates/`` directory.  Crates deleted from the INDEX
+and then re-published with a different hash were not detected, leaving the old
+``.crate`` file in the ``crates/`` directory.
+
+Romt now detects removals and modifications to crates in the INDEX; it will delete
+obsolete ``.crate`` files and re-download any modified ``.crate`` file.  This
+will be done for any crates in the RANGE, but it will not be done retroactively
+for crates that were missed in previous updates.
+
+To detect any crates that have been modified and should be re-downloaded, use
+the ``verify`` command across all known crates:
+
+.. code-block:: sh
+
+  romt crate verify --start 0 --bad-crates bad-crates
+
+If ``bad-crates`` contains any crates, re-download and pack just the bad crates
+via::
+
+.. code-block:: sh
+
+  romt crate download pack --start 0 --filter-file bad-crates
+
+``crates.tar.gz`` may then be imported as usual.
+
+Any leftover crate files that were removed from INDEX but which remain in
+``crates/`` are harmless and may be left in-place. Should such a crate be
+published with a new hash in the future, the new ``.crate`` will automatically
+be downloaded and used.  If desired, the files may be detected and removed using
+Unix command-line tooling (assuming GNU ``find`` and ``comm`` are available) as
+follows:
+
+- Create a sorted listing of all crate paths currently in the INDEX:
+
+  .. code-block:: sh
+
+    romt crate --start 0 --show-path list | sort > crates-list
+
+- Create a sorted listing of all crate paths currently in the ``crates/``
+  directory:
+
+  .. code-block:: sh
+
+    find crates -name '*.crate' -printf '%P\n' | sort > crates-find
+
+- List all paths in ``crates/`` that are not in the INDEX:
+
+  .. code-block:: sh
+
+    comm -23 crates-find crates-list > crates-extra
+
+  Examine the contents of ``crates-extra`` to make sure you want to remove
+  these obsolete files.
+
+- (optional) Create ``crates-extra.tar`` containing ``.crate`` files about to be
+  removed:
+
+  .. code-block:: sh
+
+    tar -C crates -cf crates-extra.tar -T crates-extra
+
+- Remove all files listed in ``crates-extra``:
+
+  .. code-block:: sh
+
+    cat crates-extra | (cd crates; xargs rm)
+
 ``serve`` operation
 ===================
 
