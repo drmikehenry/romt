@@ -734,10 +734,12 @@ def pack(
         archive_format = b"1\n"
         if archive_prefix_style == PrefixStyle.LOWER:
             archive_format = b"2\n"
-        with tempfile.NamedTemporaryFile() as f:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
             f.write(archive_format)
             f.flush()
+            f.close()
             tar_f.add(f.name, "ARCHIVE_FORMAT")
+            os.unlink(f.name)
 
         if bundle_path is not None:
             packed_name = INDEX_BUNDLE_PACKED_NAME
