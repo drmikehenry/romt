@@ -125,7 +125,7 @@ def _legacy_crates_config() -> CratesConfig:
 
 
 def _default_crates_config() -> CratesConfig:
-    return {"prefix": "lower", "archive_prefix": "mixed"}
+    return {"prefix": "lower", "archive_prefix": "lower"}
 
 
 def _write_crates_config(
@@ -149,7 +149,16 @@ def _read_crates_config(crates_root_path: Path) -> CratesConfig:
                 common.abort(f"invalid key {key} in {crates_root_path}")
         crates_config.update(toml_dict)
     else:
-        crates_config = _legacy_crates_config()
+        # Without a config file, use a heuristic to determine whether to use
+        # legacy configuration settings.
+        # If there are any top-level prefix directories present that contain an
+        # uppercase letter, assume legacy (`mixed`) defaults.
+        crates_config = _default_crates_config()
+        # Prefix directories are two-characters long.
+        for d in crates_root_path.glob("??"):
+            if d.is_dir() and any(c.isupper() for c in d.name):
+                crates_config = _legacy_crates_config()
+                break
     return crates_config
 
 
