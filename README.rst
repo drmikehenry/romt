@@ -496,68 +496,20 @@ localhost using either Quick-start server configuration above.
 
     cargo fetch
 
-Upgrading from Romt versions before 0.4.0
-=========================================
+Upgrading Romt
+==============
 
 When upgrading Romt, it's recommended to use the same version of Romt on both
 the Internet-connected and offline hosts.
 
-Romt 0.4.0 changes how crate files are stored on-disk by default, in order to
-fix problems using a mirror with case-sensitive and case-insensitive filesystems
-simultaneously.  Older Romt stores crates in directories based on the prefix of
-each crate's mixed-case name (e.g., ``MyCrate-0.1.0.crate`` would have a prefix
-of ``My/Cr/``).  This works for filesystems that are either case-sensitive or
-case-insensitive, but it does not allow a tree of crate files created with one
-case sensitivity to be accessed using the opposite case sensitivity.  Romt 0.4.0
-now defaults to making prefix directories in lowercase, allowing a crate mirror
-to be used via arbitrary case sensitivity.
+Romt aims for a high degree of backward compatibility.  Mostly you should be
+able to use a newer version of Romt without issue.
 
-For backward compatibility, Romt 0.4.0 supports the use of existing mirror trees
-transparently.  Newly created mirror trees will use lowercase prefixes by
-default (usable on all filesystems); mixed-case prefixes may be requested via
-the ``--prefix=mixed`` flag (permitted only with case-sensitive filesystems).
-
-Romt 0.4.0 generates crate archives (``crates.tar.gz``) using mixed-case
-prefixes by default for backward compatibility, but it can also use lowercase
-prefixes for consistency with the preferred on-disk prefix format.  To
-distinguish the prefix style, Romt 0.4.0 adds an ``ARCHIVE_FORMAT`` file to the
-crate archive.  Format ``1`` is compatible with old Romt except for the addition
-of the ``ARCHIVE_FORMAT`` file.  Old Romt will see this file as an error and
-refuse to unpack the archive by default, but processing will succeed using the
-invocation ``romt crate unpack --keep-going``.  To avoid corrupting
-an existing crate mirror by unpacking a new crate archive with old Romt,
-new archives currently default to format ``1``, but it's recommended to upgrade
-Romt to ensure proper processing of all crate archive formats.
-
-Converting crate mirror to lowercase prefixes
----------------------------------------------
-
-To convert an existing crate mirror (using mixed-case prefixes) to the new
-format (using lowercase prefixes), the easiest method is to make a crate archive
-of the old mirror, then unpack the archive using the new format.  For example:
-
-.. code-block:: sh
-
-  # Pack up existing crate mirror into ``crates.tar.gz``:
-  romt crate -v --keep-going --start 0 --end master pack
-
-  # Rename the old crate tree out of the way:
-  mv crates crates.old
-
-  # Initialize for importing with a temporary index area:
-  romt crate --index index-tmp init-import
-
-  # Unpack crates from crates.tar.gz into new crates/ tree:
-  romt crate -v --index index-tmp unpack
-
-  # Verify conversion:
-  romt crate verify -v --start 0
-
-  # Cleanup:
-  rm -rf index-tmp crates.old
-
-Note that the above steps eliminate the unpredictable-case prefixes that are
-created with old Romt using a case-insensitive filesystem (such as on Windows).
+However, if your crate mirror was created by Romt prior to version 0.4.0
+(released in April, 2022), you may be using mixed-case prefixes without a Crate
+configuration file; if that's your case, you'll need to see the section
+"Mixed-case crate prefixes" for more information how prefix handling has changed
+in Romt 0.8.0 and 0.4.0.
 
 Commonalities
 =============
@@ -1469,12 +1421,14 @@ CRATES_ROOT, which defaults to ``crates/`` and may be changed via the option
 
 As with the INDEX, crate files are distributed into subdirectories based on the
 first few characters of the crate's name.  By default, the prefixes are
-lowercase (unless forced to mixed-case via ``romt crate --prefix=mixed``).  Romt
-versions before 0.4.0 used mixed-case prefixes exclusively, as the author did
-not know how to compute lowercase prefixes in nginx rules (this is now solved
-using Perl with nginx).  Mixed-case prefixes caused problems when accessing a
-crates mirror via both case-sensitive and case-insensitive shares
-simultaneously, so lowercase prefixes are now preferred.
+lowercase (unless forced to mixed-case for compatibility via a Crate
+configuration file), though this is not recommended).  Romt versions before
+0.4.0 used mixed-case prefixes exclusively, as the author did not know how to
+compute lowercase prefixes in nginx rules; this is now solved using Perl with
+nginx.  Mixed-case prefixes caused problems when accessing a crates mirror via
+both case-sensitive and case-insensitive shares simultaneously, so lowercase
+prefixes are now highly recommended.  Future Romt may remove support for
+mixed-case prefixes.
 
 =========  =================  ==========
 {prefix}   crate name length  crate name
@@ -1511,17 +1465,9 @@ machine.  Subsequent ``unpack`` commands will query the ``url`` key for the
 BUNDLE_PATH is ``origin.bundle`` within the INDEX directory; this may be changed
 via ``--bundle-path BUNDLE_PATH``.
 
-By default, crate files are stored on-disk using lowercase prefixes.  Using
-``romt crate --prefix=mixed`` forces the use of mixed-case prefixes (as used in
-Romt before version 0.4.0).  Lowercase prefixes are recommended.  Romt will not
-permit the use of ``--prefix=mixed`` when using case-insensitive filesystems
-(such as on Windows) to avoid creating unpredictable-case prefixes due to case
-aliasing issues.
-
-Romt (as of version 0.4.0) creates a ``config.toml`` file in CRATES_ROOT as an
-implementation detail to aid in the transition to lowercase crate prefixes;
-users should generally not have to interact with it.  Future versions of Romt
-may remove this configuration file and use lowercase prefixes exclusively.
+By default, crate files are stored on-disk using lowercase prefixes.  For
+compatibility with Romt before version 0.4.0, mixed-case prefixes may be used by
+adjusting the Crate configuration file.
 
 config
 ------
@@ -1988,6 +1934,117 @@ contents similar to these examples (depending on platform):
   .. code-block:: sh
 
     chmod +x cgi-bin/git-http-backend.sh
+
+Crate configuration file
+========================
+
+Romt uses a configuration file in the CRATES_ROOT directory to control settings
+for crate operations.  This file will be created when the CRATES_ROOT is
+initialized by either ``romt crate init`` or ``romt crate init-import``.  The
+configuration file is named ``CRATES_ROOT/config.toml`` with default contents::
+
+  prefix = "lower"
+  archive_prefix = "lower"
+
+The ``prefix`` setting refers to how crates are stored within CRATES_ROOT.  By
+default, ``prefix`` is set to ``"lower"``, meaning the on-disk crate files will
+be stored using lowercase prefix directories.  This setting may be manually
+changed to the value ``"mixed"`` immediately after initialization in order to
+use mixed-case prefixes; this is not recommended and is provided only for
+backward compatibility with Romt before version 0.4.0.  Romt will not permit
+storing crates with mixed-case prefixes when using case-insensitive filesystems
+(such as on Windows) to avoid creating unpredictable-case prefixes due to case
+aliasing issues.
+
+Similarly, the ``archive_prefix`` setting controls how crate prefixes are
+represented within archive files.  By default, lowercase prefixes are used.
+Romt versions prior to 0.4.0 require mixed-case prefixes in their archives; if
+needed for backward compatibility, ``archive_prefix`` may be set to ``"mixed"``.
+This change may be made at any time.
+
+If a CRATES_ROOT was created by Romt prior to version 0.4.0, no
+``CRATES_ROOT/config.toml`` file would have been created.  Romt prior to version
+0.8.0 treated a missing ``config.toml`` as implying legacy settings (``prefix =
+"mixed"`` and ``archive_prefix = "mixed"``).  Romt 0.8.0 and later use a
+heuristic to determine whether to use legacy settings; if any prefix directory
+in CRATES_ROOT contains an uppercase letter, Romt assumes the CRATES_ROOT uses
+mixed-case prefixes and chooses legacy settings, and otherwise, default
+settings that use lowercase prefixes as assumed.
+
+Romt version 0.4.0 and newer create and process archives (``crates.tar.gz``)
+containing crates that have either lowercase (preferred) or mixed-case (legacy)
+prefixes. To distinguish the prefix style, Romt 0.4.0 adds an ``ARCHIVE_FORMAT``
+file to the crate archive.  Format ``1`` is compatible with legacy Romt prior to
+version 0.4.0 except for the addition of the ``ARCHIVE_FORMAT`` file.  Legacy
+Romt will see this file as an error and refuse to unpack the archive by default,
+but processing will succeed using the invocation ``romt crate unpack
+--keep-going``. If necessary to provide archives compatible with Romt versions
+prior to version 0.4.0, configure ``archive_prefix`` to ``"mixed"``; but it's
+highly recommended to upgrade Romt rather than fall back to mixed-case prefixes.
+
+Mixed-case crate prefixes
+=========================
+
+NOTE: If a CRATES_ROOT was created by Romt prior to version 0.4.0, you should
+create a Crates configuration file to indicate that mixed-case prefixes are
+being used; see the Crates configuration file section for details.
+
+Romt 0.4.0 (released in April, 2022) changes how crate files are stored on-disk
+by default, in order to fix problems using a mirror with case-sensitive and
+case-insensitive filesystems simultaneously.  Older Romt stores crates in
+directories based on the prefix of each crate's mixed-case name (e.g.,
+``MyCrate-0.1.0.crate`` would have a prefix of ``My/Cr/``).  This works for
+filesystems that are either case-sensitive or case-insensitive, but it does not
+allow a tree of crate files created with one case sensitivity to be accessed
+using the opposite case sensitivity.  Romt 0.4.0 now defaults to making prefix
+directories in lowercase, allowing a crate mirror to be used via arbitrary case
+sensitivity.
+
+For backward compatibility, Romt 0.4.0 supports the use of existing mirror
+trees. Newly created mirror trees will use lowercase prefixes by default (usable
+on all filesystems); mixed-case prefixes may be requested for backward
+compatibility by adjusting the Crate configuration file
+``CRATES_ROOT/config.toml``.
+
+Since Romt version 0.8.0, newly initialized CRATES_ROOT areas will be configured
+for lowercase prefixes for both crate storage in CRATES_ROOT and for crate paths
+within archive files.
+
+Converting crate mirror to lowercase prefixes
+---------------------------------------------
+
+To convert an existing crate mirror (using mixed-case prefixes) to the new
+format (using lowercase prefixes), the easiest method is to make a crate archive
+of the old mirror, then unpack the archive using the new format.
+
+Note: If your existing crate mirror lacks a Crate configuration file, you must
+first add the configuration file to ensure that Romt will use mixed-case
+prefixes.
+
+For example:
+
+.. code-block:: sh
+
+  # Pack up existing crate mirror into ``crates.tar.gz``:
+  romt crate -v --keep-going --start 0 --end master pack
+
+  # Rename the old crate tree out of the way:
+  mv crates crates.old
+
+  # Initialize for importing with a temporary index area:
+  romt crate --index index-tmp init-import
+
+  # Unpack crates from crates.tar.gz into new crates/ tree:
+  romt crate -v --index index-tmp unpack
+
+  # Verify conversion:
+  romt crate verify -v --start 0
+
+  # Cleanup:
+  rm -rf index-tmp crates.old
+
+Note that the above steps eliminate the unpredictable-case prefixes that are
+created with old Romt using a case-insensitive filesystem (such as on Windows).
 
 nginx configuration
 ===================
