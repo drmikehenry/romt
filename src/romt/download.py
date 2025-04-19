@@ -26,12 +26,7 @@ class Downloader:
             url = url[len(prefix) :]
         try:
             with open(url, "rb") as f:
-                # Unfortunately, mypy currently warns about this function:
-                #   Cannot infer type argument 1 of "copyfileobj"
-                # There is no fix at present; see:
-                #   https://github.com/python/mypy/issues/15031
-                # Therefore, just ignore this warning.
-                shutil.copyfileobj(f, fileobj)  # type: ignore
+                shutil.copyfileobj(f, fileobj)
         except FileNotFoundError as e:
             raise error.DownloadError(url, e)
 
