@@ -53,7 +53,7 @@ def readme_from_pkg_resources() -> str:
     msg = email.message_from_string(meta)
     desc = msg.get("Description", "").strip()
     if not desc and not msg.is_multipart():
-        desc = msg.get_payload().strip()
+        desc = str(msg.get_payload()).strip()
     if "\n" in desc:
         first, rest = desc.split("\n", 1)
         desc = "\n".join([first, textwrap.dedent(rest)])
