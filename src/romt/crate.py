@@ -1114,8 +1114,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         "--show-path",
         action="store_true",
         help=(
-            "show `.crate` paths for `list` and "
-            "`--bad-crates`/`--good-crates`"
+            "show `.crate` paths for `list` and `--bad-crates`/`--good-crates`"
         ),
     )
 
