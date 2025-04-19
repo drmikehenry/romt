@@ -79,8 +79,8 @@ def test(s: Session) -> None:
 
 
 # For some sessions, set `venv_backend="none"` to simply execute scripts within
-# the existing Poetry environment. This requires that `nox` is run within
-# `poetry shell` or using `poetry run nox ...`.
+# the existing Poetry environment. This requires that `nox` is run via
+# `poetry run nox ...` or in a `poetry shell`.
 @session(venv_backend="none")
 def fmt(s: Session) -> None:
     s.run("ruff", "check", ".", "--select", "I", "--fix")

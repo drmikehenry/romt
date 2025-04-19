@@ -159,6 +159,15 @@ environment.
 
   This plugin is needed for generating a ``requirements.txt`` file.
 
+  Optionally include the ``poetry-plugin-shell`` plugin as well.  Assuming
+  ``pipx`` was used for installation of poetry itself, this is done via::
+
+    pipx inject poetry poetry-plugin-shell
+
+  This plugin is needed for running ``poetry shell``.  This is optional, as
+  ``poetry run some_command`` can be used to run ``some_command`` instead of
+  doing ``poetry shell`` followed by ``some_command``.
+
 - Clone source:
 
   .. code-block:: sh
@@ -166,14 +175,15 @@ environment.
     git clone https://github.com/drmikehenry/romt
     cd romt
 
-- Run a Poetry shell (which creates and activates a virtual environment
-  installed with Romt and all dependencies)::
+- Run a Poetry install (which creates a virtual environment installed with Romt
+  and all dependencies)::
 
-    poetry shell
+    poetry install
 
-- Optionally build an executable for your platform::
+- Optionally build an executable for your platform; this requires ``poetry run``
+  to run ``nox`` within the Poetry virtual environment::
 
-    nox -s build
+    poetry run nox -s build
 
   Find executables in ``dist/`` tree based on your platform, e.g.::
 

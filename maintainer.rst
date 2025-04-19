@@ -20,17 +20,13 @@ Perform these steps on Linux.
 
 - Verify changes are recorded in ``CHANGES.rst``.
 
-- Run a Poetry shell::
-
-    poetry shell
-
 - Verify all Nox tests are passing::
 
-    nox
+    poetry run nox
 
 - Prepare the release::
 
-    nox -s release
+    poetry run nox -s release
 
 - Follow on-screen instructions to complete release.
 
