@@ -309,6 +309,10 @@ def blobs_in_commit_range(
     if start_commit is not None:
         for diff in end_commit.diff(start_commit):
             blob_path = diff.a_path or diff.b_path
+            # `blob_path` should always be a valid string, but `mypy` doesn't
+            # know that.
+            if blob_path is None:
+                continue
             lower_name = os.path.basename(blob_path).lower()
             if crate_filter.name_matches(lower_name):
                 # diff.a_xxx goes with `end_commit`.
