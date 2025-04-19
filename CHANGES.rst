@@ -2,6 +2,31 @@
 History
 *******
 
+Version 0.8.0
+=============
+
+- Default to using lowercase for crate paths within archives.  Most users will
+  be unaffected by this change; however, if your crate mirror was setup using
+  Romt prior to version 0.4.0 (release in April, 2022), you may be using
+  mixed-case prefixes in your CRATES_ROOT without a Crate configuration file,
+  in which case you'll need to either add the configuration file or convert your
+  mirror to use lowercase prefixes.
+
+- Fix Windows-specific archive file creation bug added in Romt version 0.7.0.
+  Python's ``NamedTemporaryFile()`` allows the temporary file to be opened
+  multiple times simultaneously on Unix, but not on Windows.
+
+- Add continuous integration tests for Windows.
+
+- Remove support for end-of-life Python 3.8.
+
+- Add support for Python 3.13.
+
+- Update Linux binaries to be built with Ubuntu 20.04 (due to the new Python 3.9
+  minimum supported version).
+
+- Update Python dependency versions.
+
 Version 0.7.0
 =============
 
