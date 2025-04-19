@@ -1,7 +1,7 @@
 import argparse
 import importlib.metadata
 import sys
-from typing import List, Optional
+import typing as T
 
 import romt.crate
 import romt.rustup
@@ -176,7 +176,7 @@ def make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run(sys_args: Optional[List[str]] = None) -> int:
+def run(sys_args: T.Optional[T.List[str]] = None) -> int:
     parser = make_parser()
     args = parser.parse_args(args=sys_args)
     if args.readme:
