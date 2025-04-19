@@ -128,6 +128,11 @@ max-complexity = 15
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "gnupg"
+]
 ignore_missing_imports = true
 
 ##############################################################################
