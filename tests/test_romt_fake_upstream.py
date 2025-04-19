@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import textwrap
 import typing as T
 from pathlib import Path
@@ -20,9 +21,17 @@ def path_append_suffix(path: Path, suffix: str) -> Path:
     return path.with_suffix(path.suffix + suffix)
 
 
+def remove_readonly(
+    func: T.Callable[[str], None], path: str, _: T.Any
+) -> None:
+    "Clear the readonly bit and reattempt the removal"
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
+
 def rmtree(path: Path) -> None:
     if path.is_dir():
-        shutil.rmtree(path)
+        shutil.rmtree(path, onerror=remove_readonly)
 
 
 def mkdir_p(path: Path) -> None:
