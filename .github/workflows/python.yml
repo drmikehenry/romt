@@ -4,10 +4,15 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
     strategy:
       matrix:
+        os: [ubuntu-22.04]
         python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
+        include:
+          # Limit Windows testing to one Python version.
+          - os: windows-latest
+            python-version: "3.9"
+    runs-on: "${{ matrix.os }}"
     steps:
       - uses: actions/checkout@v4
 
