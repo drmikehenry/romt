@@ -27,36 +27,39 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     # Include this classifier to prevent accidently publishing private code to PyPI.
     #   https://pypi.org/classifiers/
     # "Private :: Do Not Upload",
 ]
 
 [tool.poetry.dependencies]
-# Some packages, such as scipy, constrain their upper bound of Python versions
-# they support. Without also constraining the upper bound here, Poetry will not
-# select those versions and will result in an old version being resolved/locked.
-python = "^3.8, <3.13"
+# Some packages (including `pyinstaller`), constrain their upper bound of Python
+# versions they support.  Without also constraining the upper bound here, Poetry
+# will not allow use of such packages.
+# This unfortuantely conflicts with the good advice given here:
+# - https://iscinumpy.dev/post/bound-version-constraints/
+# But the only alternative would be to drop use of `pyinstaller`.
+python = "^3.9, <3.14"
 
 # GitPython >= 3.0.5 is required to avoid this traceback on Windows:
 #   Exception ignored in: <function Git.AutoInterrupt.__del__ at 0x...>
 # See https://github.com/gitpython-developers/GitPython/issues/935.
 gitpython = "^3.1"
 python-gnupg = "^0.5"
-httpx = "^0.26"
+httpx = "^0.28"
 toml = "^0.10"
-trio = "^0.23"
+trio = "^0.29"
 
 [tool.poetry.group.nox.dependencies]
 nox-poetry = "*"
 
 [tool.poetry.group.install.dependencies]
-pyinstaller = "^6.3"
+pyinstaller = "^6.13"
 pypiwin32 = {version = "^223", platform = "win32"}
 twine = "*"
 
