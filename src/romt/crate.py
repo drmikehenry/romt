@@ -921,10 +921,7 @@ def merge_origin_master(repo: git.Repo) -> None:
 
 
 def _init_common(
-    index_path: Path,
-    origin_location: str,
-    crates_root_path: Path,
-    prefix_style: PrefixStyle,
+    index_path: Path, origin_location: str, crates_root_path: Path
 ) -> git.Repo:
     if index_path.exists():
         raise error.UsageError(
@@ -938,9 +935,7 @@ def _init_common(
         )
     common.iprint(f"create crates directory at {repr(str(crates_root_path))}:")
     crates_root_path.mkdir(parents=True)
-    crates_config = _default_crates_config()
-    crates_config["prefix"] = prefix_style.to_config_str()
-    _write_crates_config(crates_root_path, crates_config)
+    _write_crates_config(crates_root_path, _default_crates_config())
 
     # Disallow MIXED style on case-insensitive filesystem:
     try:
@@ -970,19 +965,14 @@ def init(
     index_path: Path,
     index_url: str,
     crates_root_path: Path,
-    prefix_style: PrefixStyle,
 ) -> None:
-    _init_common(index_path, index_url, crates_root_path, prefix_style)
+    _init_common(index_path, index_url, crates_root_path)
 
 
-def init_import(
-    index_path: Path, crates_root_path: Path, prefix_style: PrefixStyle
-) -> None:
+def init_import(index_path: Path, crates_root_path: Path) -> None:
     bundle_path = index_path / INDEX_BUNDLE_NAME
     bundle_location = str(bundle_path.absolute())
-    repo = _init_common(
-        index_path, bundle_location, crates_root_path, prefix_style
-    )
+    repo = _init_common(index_path, bundle_location, crates_root_path)
     with repo.config_writer() as writer:
         writer.set_value(
             'remote "origin"', "fetch", "+refs/heads/*:refs/remotes/origin/*"
@@ -1115,14 +1105,6 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         help="""base URL for server configured into INDEX/config.json by
             ``config`` command (default=%(default)s)
         """,
-    )
-
-    parser.add_argument(
-        "--prefix",
-        dest="prefix_style",
-        choices=["mixed", "lower"],
-        default="lower",
-        help="crate path prefix style (default=%(default)s)",
     )
 
     parser.add_argument(
@@ -1395,7 +1377,6 @@ class Main(base.BaseMain):
 
     def cmd_init(self) -> None:
         index_path = Path(self.args.index)
-        prefix_style = PrefixStyle.from_config_str(self.args.prefix_style)
         index_url = self.args.index_url
         parsed = urllib.parse.urlparse(index_url)
         if not parsed.scheme and not parsed.netloc:
@@ -1405,12 +1386,11 @@ class Main(base.BaseMain):
             # interpreted to be relative to the .git/ directory, which changes
             # their meaning.
             index_url = os.path.abspath(index_url)
-        init(index_path, index_url, Path(self.args.crates), prefix_style)
+        init(index_path, index_url, Path(self.args.crates))
 
     def cmd_init_import(self) -> None:
         index_path = Path(self.args.index)
-        prefix_style = PrefixStyle.from_config_str(self.args.prefix_style)
-        init_import(index_path, Path(self.args.crates), prefix_style)
+        init_import(index_path, Path(self.args.crates))
 
     def cmd_config(self) -> None:
         self.forget_crates()

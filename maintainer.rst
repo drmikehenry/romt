@@ -59,7 +59,6 @@ Testing with fake crates
     romt crate \
       --index-url http://127.0.0.1:9000/git/crates.io-index \
       --crates-url http://127.0.0.1:9000/crates/{crate}/{crate}-{version}.crate \
-      --prefix mixed \
       init pull download pack
 
 - Import testing::
