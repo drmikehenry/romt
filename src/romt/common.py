@@ -194,18 +194,19 @@ def normalize_patterns(patterns: T.Iterable[str]) -> T.List[str]:
 
 @contextmanager
 def tar_context(
-    archive_path: Path, mode: str
+    archive_path: Path, mode: T.Literal["r", "w"]
 ) -> T.Generator[tarfile.TarFile, None, None]:
     """mode is "r" (read) or "w" (write)."""
     writing = mode == "w"
+    tar_mode: T.Literal["r", "w", "r:gz", "w:gz"] = mode
     if archive_path.name.endswith(".gz"):
-        mode += ":gz"
+        tar_mode = "w:gz" if writing else "r:gz"
 
     if writing:
         if archive_path.exists():
             archive_path.unlink()
         tmp_archive_path = tmp_path_for(archive_path)
-        tar_f = tarfile.open(str(tmp_archive_path), mode)
+        tar_f = tarfile.open(str(tmp_archive_path), tar_mode)
         try:
             yield tar_f
         except (Exception, KeyboardInterrupt):
@@ -216,7 +217,7 @@ def tar_context(
         tar_f.close()
         tmp_archive_path.rename(archive_path)
     else:
-        tar_f = tarfile.open(str(archive_path), mode)
+        tar_f = tarfile.open(str(archive_path), tar_mode)
         if hasattr(tarfile, "data_filter"):
             tar_f.extraction_filter = tarfile.data_filter
         yield tar_f
