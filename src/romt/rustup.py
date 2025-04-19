@@ -434,8 +434,8 @@ class Main(dist.DistMain):
     def _write_release_stable(self, version: str) -> None:
         path = self.release_stable_path
         toml_dict = {"schema-version": "1", "version": version}
-        with path.open("w") as f:
-            toml.dump(toml_dict, f)
+        with path.open("wb") as f:
+            f.write(toml.dumps(toml_dict).encode())
 
     def _fixup_version(self, version: str) -> None:
         # Write release_stable unless a newer one already exists.

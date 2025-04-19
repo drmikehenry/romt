@@ -132,8 +132,8 @@ def _write_crates_config(
     crates_root_path: Path, crates_config: CratesConfig
 ) -> None:
     crates_config_path = _get_crates_config_path(crates_root_path)
-    with crates_config_path.open("w") as f:
-        toml.dump(crates_config, f)
+    with crates_config_path.open("wb") as f:
+        f.write(toml.dumps(crates_config).encode())
 
 
 def _read_crates_config(crates_root_path: Path) -> CratesConfig:

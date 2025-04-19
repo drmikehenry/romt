@@ -49,8 +49,8 @@ def add_fake_crate(name: str, version: str) -> None:
     toml_path = proj_path / "Cargo.toml"
     toml_data = toml.load(toml_path)
     toml_data["package"]["version"] = version
-    with toml_path.open("w") as f:
-        toml.dump(toml_data, f)
+    with toml_path.open("wb") as f:
+        f.write(toml.dumps(toml_data).encode())
 
     subprocess.run(["git", "add", "--all"], cwd=proj_path)
     subprocess.run(
