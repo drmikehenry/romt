@@ -4,6 +4,7 @@ import re
 import shutil
 from pathlib import Path
 import typing as T
+import urllib.parse
 
 import trio
 
@@ -55,7 +56,7 @@ When multiple COMMANDs are given, they share all option values.
 For complete details, try ``romt --readme`` to view README.rst.
 """
 
-TOOLCHAIN_DEFAULT_URL = "https://static.rust-lang.org/dist"
+RUSTUP_DIST_SERVER_DEFAULT = "https://static.rust-lang.org"
 
 
 def parse_spec(spec: str) -> T.Tuple[str, str]:
@@ -154,14 +155,14 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
         help="""local download directory (default: %(default)s)""",
     )
 
-    default_url = os.environ.get("RUSTUP_DIST_SERVER", TOOLCHAIN_DEFAULT_URL)
-    if default_url == TOOLCHAIN_DEFAULT_URL:
-        default_help = "; override default via env. var. `RUSTUP_DIST_SERVER`"
-    else:
-        default_help = (
-            " from env. var. `RUSTUP_DIST_SERVER`;"
-            f" otherwise default would be `{TOOLCHAIN_DEFAULT_URL}`"
-        )
+    default_help = (
+        " from `$RUSTUP_DIST_SERVER/dist` where by default"
+        f" `RUSTUP_DIST_SERVER={RUSTUP_DIST_SERVER_DEFAULT}`"
+    )
+    default_url = urllib.parse.urljoin(
+        os.environ.get("RUSTUP_DIST_SERVER", RUSTUP_DIST_SERVER_DEFAULT) + "/",
+        "dist",
+    )
     parser.add_argument(
         "--url",
         action="store",
