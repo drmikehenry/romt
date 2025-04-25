@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "romt"
-version = "0.8.0"
+version = "0.9.0"
 include = [
   { path = "CHANGES.rst", format="sdist" },
   { path = "LICENSE.rst", format="sdist" },
