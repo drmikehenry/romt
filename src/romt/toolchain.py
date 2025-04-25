@@ -531,6 +531,15 @@ class Main(dist.DistMain):
             for target in manifest.all_targets():
                 common.eprint(target)
 
+    def cmd_all_components(self) -> None:
+        for spec in self.adjust_wild_specs(self.specs):
+            common.iprint(f"All components: {spec}")
+            manifest = self.select_manifest(spec, download=False)
+            common.iprint(f"  ident: {manifest.ident}")
+            available_packages = list(manifest.gen_available_packages())
+            for name in sorted(set(p.name for p in available_packages)):
+                common.iprint(f"    {name}")
+
     def cmd_pack(self) -> None:
         base_targets = dist.require_targets(self.targets, default="*")
         archive_path = self.get_archive_path()
@@ -719,6 +728,7 @@ class Main(dist.DistMain):
             "verify",
             "list",
             "all-targets",
+            "all-components",
             "pack",
             "unpack",
             "fixup",
@@ -746,6 +756,9 @@ class Main(dist.DistMain):
 
             elif cmd == "all-targets":
                 self.cmd_all_targets()
+
+            elif cmd == "all-components":
+                self.cmd_all_components()
 
             elif cmd == "pack":
                 self.cmd_pack()
