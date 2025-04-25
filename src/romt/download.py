@@ -170,6 +170,7 @@ class Downloader:
         cached: bool = True,
         assume_ok: bool = False,
         with_sig: bool = False,
+        hash: str = "",
     ) -> None:
         hash_path = integrity.path_append_hash_suffix(dest_path)
         sig_path = signature.path_append_sig_suffix(dest_path)
@@ -191,9 +192,14 @@ class Downloader:
             except (error.MissingFileError, error.IntegrityError):
                 pass
         common.vprint(f"[downloading] {dest_path}")
-        # Download the (small) hash and signature files first.
-        hash_url = integrity.append_hash_suffix(dest_url)
-        await self.adownload(hash_url, hash_path)
+        if hash:
+            # Create hash file from `hash`.
+            common.vvprint(f"[create hash] {hash_path}")
+            integrity.write_hash_file_for(dest_path, hash)
+        else:
+            # Download the (small) hash and signature files first.
+            hash_url = integrity.append_hash_suffix(dest_url)
+            await self.adownload(hash_url, hash_path)
         if with_sig:
             sig_url = signature.append_sig_suffix(dest_url)
             await self.adownload(sig_url, sig_path)
@@ -222,6 +228,7 @@ class Downloader:
         cached: bool = True,
         assume_ok: bool = False,
         with_sig: bool = False,
+        hash: str = "",
     ) -> None:
         self.run_job(
             self.adownload_verify,
@@ -230,6 +237,7 @@ class Downloader:
             cached=cached,
             assume_ok=assume_ok,
             with_sig=with_sig,
+            hash=hash,
         )
 
     def run_job(

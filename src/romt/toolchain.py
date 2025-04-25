@@ -382,6 +382,7 @@ class Main(dist.DistMain):
         download: bool,
         dest_url: str,
         dest_path: Path,
+        dest_hash: str,
     ) -> None:
         try:
             if download:
@@ -390,6 +391,7 @@ class Main(dist.DistMain):
                     dest_path,
                     assume_ok=self.args.assume_ok,
                     with_sig=self._with_sig,
+                    hash=dest_hash,
                 )
             else:
                 self.downloader.verify(dest_path, with_sig=self._with_sig)
@@ -423,6 +425,7 @@ class Main(dist.DistMain):
                     common.vprint(f"[duplicate] {dest_path}")
                     continue
                 dest_url = self.url_from_rel_path(rel_path)
+                dest_hash = package.hash
                 await limiter.acquire_on_behalf_of(dest_path)
                 nursery.start_soon(
                     self._download_verify_one,
@@ -430,6 +433,7 @@ class Main(dist.DistMain):
                     download,
                     dest_url,
                     dest_path,
+                    dest_hash,
                 )
 
     def downloaded_target_packages(
