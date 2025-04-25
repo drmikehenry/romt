@@ -46,6 +46,7 @@ class Downloader:
         self.run_job(self.adownload_fileobj, url, fileobj)
 
     async def _adownload(self, url: str, dest_path: Path) -> None:
+        common.vvprint(f"[downloadurl] {dest_path} <- {url}")
         common.make_dirs_for(dest_path)
         try:
             with dest_path.open("wb") as f:
