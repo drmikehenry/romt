@@ -179,6 +179,13 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--components",
+        action="append",
+        default=[],
+        help="component names to include or exclude",
+    )
+
+    parser.add_argument(
         "--warn-signature",
         action="store_true",
         default=False,
@@ -206,6 +213,32 @@ class Main(dist.DistMain):
         self.downloader.set_warn_signature(args.warn_signature)
         self._with_sig = not args.no_signature
         self.cross = args.cross
+        self._component_includes = set()
+        self._component_excludes = set()
+        for comp in args.components:
+            for name in re.split(r"(?:,|\s)+", comp):
+                if name.startswith("!"):
+                    self._component_excludes.add(name[1:])
+                else:
+                    self._component_includes.add(name)
+
+    def _component_enabled(self, component_name: str) -> bool:
+        if component_name in self._component_excludes:
+            return False
+        elif not self._component_includes:
+            return True
+        else:
+            return component_name in self._component_includes
+
+    def _component_status(self) -> None:
+        if self._component_includes:
+            common.iprint("  components limited to:")
+            for name in sorted(self._component_includes):
+                common.iprint(f"    {name}")
+        if self._component_excludes:
+            common.iprint("  components excluded:")
+            for name in sorted(self._component_excludes):
+                common.iprint(f"    {name}")
 
     def manifest_url_path(self, date: str, channel: str) -> T.Tuple[str, Path]:
         rel_path = channel_rel_path(date, channel)
@@ -382,6 +415,8 @@ class Main(dist.DistMain):
         async with trio.open_nursery() as nursery:
             limiter = self.downloader.new_limiter()
             for package in packages:
+                if not self._component_enabled(package.name):
+                    continue
                 rel_path = package.rel_path
                 dest_path = self.dest_path_from_rel_path(rel_path)
                 if self._path_duplicated(dest_path, processed_paths):
@@ -436,6 +471,7 @@ class Main(dist.DistMain):
             common.iprint(
                 "{}: {}".format("Download" if download else "Verify", spec)
             )
+            self._component_status()
             manifest = self.select_manifest(
                 spec, download=download, canonical=True
             )
@@ -544,6 +580,7 @@ class Main(dist.DistMain):
         base_targets = dist.require_targets(self.targets, default="*")
         archive_path = self.get_archive_path()
         common.iprint(f"Packing archive: {archive_path}")
+        self._component_status()
         with common.tar_context(archive_path, "w") as tar_f:
             processed_paths: T.Set[Path] = set()
 
@@ -592,7 +629,8 @@ class Main(dist.DistMain):
 
                 # Pack up package file parts.
                 for package in packages:
-                    pack_rel_path(package.rel_path)
+                    if self._component_enabled(package.name):
+                        pack_rel_path(package.rel_path)
 
     def _detect_specs(self, rel_paths: T.Set[str]) -> T.List[str]:
         specs = []
