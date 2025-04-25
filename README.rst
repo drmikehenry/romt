@@ -547,7 +547,10 @@ SHA256 hashes
 
 - Each file named ``{file}.sha256`` contains the SHA256 hash of the
   corresponding file named ``{file}``.  Romt verifies all hashes to ensure file
-  integrity.
+  integrity.  Where possible, Romt will create ``{file}.sha256`` files for
+  toolchain components based on the hash provided in the toolchain manifest.
+  This allows Romt to work with mirrors that do not contain these ``.sha256``
+  files.
 
 Command-line option details
 ---------------------------
@@ -561,6 +564,30 @@ Command-line option details
 
 - The option ``--assume-ok`` instructs Romt that all files already on-disk are
   to be assumed OK; no hashes or signatures are checked for such files.
+
+SSL verification
+----------------
+
+Romt provides control over SSL verification of servers using HTTPS.  Romt uses
+the ``httpx`` library for downloading Rust artifacts.  By default, ``httpx``
+always verifies server certificates.  Verification is based on a bundled set of
+certificate authorities; in particular, ``httpx`` will not use certificate
+authorities installed in the host system.  Romt uses several environment
+variables to control server certificate verification:
+
+- ``SSL_VERIFY`` allows verification to be disabled.  If this variable is set to
+  the string ``false``, verification will be disabled.  The string is compared
+  case-insensitively.
+
+- ``SSL_CERT_FILE`` may point to a certificate file.  For example, to use the
+  system certificates on an Ubuntu system::
+
+    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+- ``SSL_CERT_DIR`` may point to directory of certificate files.  To use the
+  certificates found in the directory ``/etc/ssl/certs``::
+
+    SSL_CERT_DIR=/etc/ssl/certs
 
 ``toolchain`` operation
 =======================
@@ -635,8 +662,14 @@ By default, all toolchain components will be downloaded; but when the switch
 will be downloaded.  This is to support cross-compilation to a given target
 without the need to download all toolchain components for that target.
 
-Files are downloaded from ``https://static.rust-lang.org/dist`` by default; this
-may be changed via the option ``--url <URL>``.
+Rust provides toolchain files in the ``dist/`` subdirectory of the Rust dist
+server.  The dist server defaults to ``https://static.rust-lang.org``, but this
+default may be overridden in Rust tooling and in Romt by setting the environment
+variable ``RUST_DIST_SERVER``.  If ``RUST_DIST_SERVER`` is unset, files are by
+default downloaded from ``https://static.rust-lang.org/dist``; otherwise, file
+are by default downloaded from ``$RUSTUP_DIST_SERVER/dist``.  This default
+download URL may be changed via the option ``--url <URL>`` (e.g., ``romt
+toolchain --url http://my.server/rust/dist``).
 
 Files are downloaded to the destination directory ``dist/`` by default; this
 may be changed via the option ``--dest DEST``.
@@ -727,6 +760,13 @@ from the dated directories.
 
 Because the contents of dateless manifests are subject to change, cached copies
 of these files are re-downloaded during a ``download`` command.
+
+When Romt downloads a top-level manifest, it will copy it into the corresponding
+dated directory with its canonical name. This allows Romt to work with mirrors
+that lack manifests in the dated directories.  For example, Rust 1.76.0 lives in
+dated directory 2024-02-08.  A top-level manifest of
+``channel-rust-1.76.0.toml`` will be copied to the canonical location and name
+``2024-02-08/channel-rust-stable.toml``.
 
 Packing/unpacking
 -----------------
@@ -955,6 +995,29 @@ on-disk toolchains.  It is implicitly done as part of ``download`` and
 ``romt toolchain all-targets`` prints a list of all known targets mentioned in
 the given SPEC.
 
+``romt toolchain all-components`` prints a list of all known toolchain
+components mentioned in the given SPEC.  This is useful to determine the
+component names for use with the ``--components`` option.  Sample component
+names include::
+
+    cargo
+    clippy-preview
+    llvm-bitcode-linker-preview
+    llvm-tools-preview
+    reproducible-artifacts
+    rls-preview
+    rust
+    rust-analysis
+    rust-analyzer-preview
+    rust-docs
+    rust-mingw
+    rust-src
+    rust-std
+    rustc
+    rustc-dev
+    rustc-docs
+    rustfmt-preview
+
 Command-line option details
 ---------------------------
 
@@ -964,6 +1027,18 @@ transferred.  This might be helpful in case the signing key changes.
 
 The option ``--no-signature`` prevents both downloading and checking of GPG
 signature files (``*.asc``).  This is mainly for testing.
+
+The option ``--components`` allows for processing a subset of toolchain
+components.  This may be useful to ignore unnecessary components (such as
+``rustc-dev`` and to work with mirrors that do not contain the complete set of
+components.  By default, all components are included.  To include only a
+specific subset of components, provide the list of component names to
+``--components``.  Names may be separated by whitespace or commas, and
+``--components`` may be provided multiple times.  For example, to include the
+four components ``cargo``, ``rust``, ``rust-std``, and ``rustc``, you could use
+``--components 'cargo rust' --components rust-std,rustc``.  To exclude a
+component, prefix the name with ``!``; e.g., to exclude ``rust-src``, you could
+use ``--components '!rust-src'``.
 
 ``rustup`` operation
 ====================

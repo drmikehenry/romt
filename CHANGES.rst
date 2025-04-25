@@ -2,6 +2,48 @@
 History
 *******
 
+Version 0.9.0
+=============
+
+- Fix default for ``toolchain --url`` to be ``$RUST_DIST_SERVER/dist``.
+  Previously this erroneously defaulted to ``$RUST_DIST_SERVER``.
+
+- Provide control over SSL verification via environment variables:
+
+  - ``$SSL_VERIFY=false`` will disable verification entirely.
+  - ``$SSL_CERT_FILE`` may point to a certificate file.
+  - ``$SSL_CERT_DIR`` may point to directory of certificate files.
+
+- Add ``toolchain all-components`` command.  This lists all possible component
+  names based on the manifest.
+
+- Add ``toolchain --components`` filter.  This allows processing of a subset of
+  toolchain components.
+
+  - Component ``COMP`` may be included via ``--components COMP``.
+  - Component ``COMP`` may be excluded via ``--components !COMP``.
+
+  ``--components`` may be specified multiple times.  The argument to each
+  ``--components`` switch is split on whitespace and commas to make the full
+  list of ``COMP`` values.
+
+- If a hash (SHA256) is provided in the manifest and thus known in advance, Romt
+  will create the expected ``.sha256`` files instead of downloading them.  This
+  allows Romt to work with mirrors that do not contain these ``.sha256`` files.
+
+- Copy manifest into canonical name in dated subdirectory if necessary.  This
+  allows Romt to work with mirrors that lack manifests in the dated directories.
+
+  For example, Rust 1.76.0 lives in dated directory 2024-02-08.  A top-level
+  manifest of ``channel-rust-1.76.0.toml`` will be copied to the canonical
+  location and name ``2024-02-08/channel-rust-stable.toml``.
+
+- Normalize generated ``.sha256`` format.  Rust tooling pays attention to the
+  hash value in these files but doesn't appear to care about the rest (including
+  the text vs. binary indicator and the filename).  When Romt generates a
+  ``.sha256`` file, it now uses ``*`` to indicate binary file hashing and uses
+  the basename of the hashed file as the filename portion.
+
 Version 0.8.0
 =============
 
