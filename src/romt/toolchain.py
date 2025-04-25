@@ -279,6 +279,12 @@ class Main(dist.DistMain):
         if canonical and (
             manifest.date != date or manifest.channel != channel
         ):
+            _man_url, dst_man_path = self.manifest_url_path(
+                manifest.date, manifest.channel
+            )
+            if download and not dst_man_path.exists():
+                _man_url, src_man_path = self.manifest_url_path(date, channel)
+                self._copy_manifest(src_man_path, dst_man_path)
             manifest = self.get_manifest(
                 manifest.date, manifest.channel, download=download
             )
