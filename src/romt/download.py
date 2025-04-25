@@ -1,6 +1,9 @@
+import certifi
 import functools
+import os
 import shutil
 from pathlib import Path
+import ssl
 import typing as T
 
 import httpx
@@ -12,7 +15,14 @@ from romt import common, error, integrity, signature
 class Downloader:
     def __init__(self, num_jobs: int, timeout_seconds: int) -> None:
         timeout = timeout_seconds if timeout_seconds > 0 else None
-        self._client = httpx.AsyncClient(timeout=timeout)
+        if os.environ.get("SSL_VERIFY", "True").lower() == "false":
+            self._client = httpx.AsyncClient(timeout=timeout, verify=False)
+        else:
+            ctx = ssl.create_default_context(
+                cafile=os.environ.get("SSL_CERT_FILE", certifi.where()),
+                capath=os.environ.get("SSL_CERT_DIR"),
+            )
+            self._client = httpx.AsyncClient(timeout=timeout, verify=ctx)
         self.sig_verifier = signature.Verifier()
         self._warn_signature = False
         self.num_jobs = num_jobs
