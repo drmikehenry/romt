@@ -24,6 +24,7 @@ class Package:
         self.target = target
         self.available = details["available"]
         self.xz_url = str(details.get("xz_url", ""))
+        self.xz_hash = str(details.get("xz_hash", ""))
 
     def _fields(self) -> T.Tuple[str, str]:
         return (self.name, self.target)
@@ -52,6 +53,14 @@ class Package:
         url = self.xz_url
         prefix = "/dist/"
         return url[url.index(prefix) + len(prefix) :]
+
+    @property
+    def hash(self) -> str:
+        if not self.has_rel_path:
+            raise ValueError(
+                f"Package {self.name}/{self.target} missing xz_url"
+            )
+        return self.xz_hash
 
 
 @functools.lru_cache
