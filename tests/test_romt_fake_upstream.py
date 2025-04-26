@@ -212,7 +212,9 @@ CRATE_VERSIONS = [
 def make_sha256_file_pair(path: Path, data: bytes) -> str:
     write_file_bytes(path, data)
     sha256sum = hashlib.sha256(data).hexdigest()
-    write_file_text(path_append_suffix(path, ".sha256"), sha256sum + "\n")
+    write_file_text(
+        path_append_suffix(path, ".sha256"), f"{sha256sum} *{path.name}\n"
+    )
     return sha256sum
 
 
