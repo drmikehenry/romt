@@ -69,11 +69,10 @@ def path_append_hash_suffix(path: Path) -> Path:
     return common.path_append(path, _hash_suffix)
 
 
-def write_hash_file_for(path: Path) -> None:
-    h = hash_file(path)
+def write_hash_file_for(path: Path, hash: str) -> None:
     path_sha256 = path_append_hash_suffix(path)
     with path_sha256.open("wb") as f:
-        hash_text = format_hash_text(h, path.name)
+        hash_text = format_hash_text(hash, path.name)
         f.write(hash_text.encode())
 
 
