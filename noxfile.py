@@ -244,7 +244,7 @@ def release(s: Session) -> None:
           git push; git push --tags
 
         Upload to PyPI:
-          twine upload {tar_path} {whl_path}
+          poetry run twine upload {tar_path} {whl_path}
 
         Create Github release for {version} from tree:
           dist/github/
