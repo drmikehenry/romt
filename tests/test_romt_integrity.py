@@ -42,3 +42,11 @@ def test_parse_hash_text() -> None:
     hash_text = f"{expected_hash} {expected_name}"
     with pytest.raises(ValueError):
         integrity.parse_hash_text(hash_text)
+
+
+def test_format_hash_text() -> None:
+    hash = "7b89a56897a1581ca66312468276ee08e6d596a3254128a567c1658c6f733c76"
+    name = "channel-rust-stable.toml"
+    expected_hash_text = f"{hash} *{name}\n"
+    hash_text = integrity.format_hash_text(hash, name)
+    assert hash_text == expected_hash_text

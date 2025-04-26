@@ -50,6 +50,10 @@ def parse_hash_text(hash_text: str) -> T.Tuple[str, str]:
     return m.group("hash"), m.group("name")
 
 
+def format_hash_text(hash: str, name: str) -> str:
+    return f"{hash} *{name}\n"
+
+
 def read_hash_file(path: Path) -> T.Tuple[str, str]:
     return parse_hash_text(path.read_text("utf-8"))
 
@@ -69,7 +73,8 @@ def write_hash_file_for(path: Path) -> None:
     h = hash_file(path)
     path_sha256 = path_append_hash_suffix(path)
     with path_sha256.open("wb") as f:
-        f.write(f"{h}  {path.name}\n".encode())
+        hash_text = format_hash_text(h, path.name)
+        f.write(hash_text.encode())
 
 
 def verify_hash(path: Path, expected_hash: str) -> None:
