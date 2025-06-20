@@ -3,6 +3,8 @@ import importlib.metadata
 import sys
 import typing as T
 
+import exceptiongroup
+
 import romt.crate
 import romt.rustup
 import romt.serve
@@ -176,38 +178,53 @@ def make_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def run(sys_args: T.Optional[T.List[str]] = None) -> int:
+def run_inner(sys_args: T.Optional[T.List[str]] = None) -> None:
     parser = make_parser()
     args = parser.parse_args(args=sys_args)
     if args.readme:
         readme()
-        return 0
+        return
     cmd = args.subparser_name
-    try:
-        if cmd is None:
-            raise error.UsageError("missing OPERATION (try --help)")
+    if cmd is None:
+        raise error.UsageError("missing OPERATION (try --help)")
 
-        common.set_max_verbosity(
-            common.VERBOSITY_INFO + args.verbose - args.quiet
-        )
+    common.set_max_verbosity(common.VERBOSITY_INFO + args.verbose - args.quiet)
 
-        if cmd == "crate":
-            romt.crate.Main(args).run()
-        elif cmd == "rustup":
-            romt.rustup.Main(args).run()
-        elif cmd == "toolchain":
-            romt.toolchain.Main(args).run()
-        elif cmd == "serve":
-            romt.serve.Main(args).run()
+    if cmd == "crate":
+        romt.crate.Main(args).run()
+    elif cmd == "rustup":
+        romt.rustup.Main(args).run()
+    elif cmd == "toolchain":
+        romt.toolchain.Main(args).run()
+    elif cmd == "serve":
+        romt.serve.Main(args).run()
 
-    except error.Error as e:
-        common.eprint(e)
-        return 1
 
-    except KeyboardInterrupt:
+def run(sys_args: T.Optional[T.List[str]] = None) -> int:
+    exit_status = 0
+
+    def handle_errors(excgroup: exceptiongroup.BaseExceptionGroup) -> None:
+        nonlocal exit_status
+        for e in excgroup.exceptions:
+            common.eprint(e)
+        exit_status = 1
+
+    def handle_keyboard_interrupt(
+        excgroup: exceptiongroup.BaseExceptionGroup,
+    ) -> None:
+        nonlocal exit_status
         common.eprint("Keyboard interrupt")
+        exit_status = 130
 
-    return 0
+    with exceptiongroup.catch(
+        {
+            error.Error: handle_errors,
+            KeyboardInterrupt: handle_keyboard_interrupt,
+        }
+    ):
+        run_inner(sys_args)
+
+    return exit_status
 
 
 def main() -> None:
