@@ -1,11 +1,11 @@
-import certifi
 import functools
 import os
 import shutil
-from pathlib import Path
 import ssl
 import typing as T
+from pathlib import Path
 
+import certifi
 import httpx
 import trio
 

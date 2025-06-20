@@ -4,9 +4,9 @@ import platform
 import re
 import stat
 import tarfile
+import typing as T
 from contextlib import contextmanager
 from pathlib import Path
-import typing as T
 
 import romt.error
 

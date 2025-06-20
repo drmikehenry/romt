@@ -2,9 +2,9 @@ import argparse
 import http
 import http.server
 import os
-from pathlib import Path
 import subprocess
 import typing as T
+from pathlib import Path
 
 import romt.crate
 from romt import common

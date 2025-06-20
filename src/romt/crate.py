@@ -8,9 +8,9 @@ import re
 import shutil
 import tempfile
 import typing
+import typing as T
 import urllib.parse
 from pathlib import Path
-import typing as T
 
 # Using `try/except` here to prevent this lint warning caused by setting the
 # environment variable before subsequent imports::

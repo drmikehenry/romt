@@ -1,7 +1,7 @@
 import hashlib
-from pathlib import Path
 import re
 import typing as T
+from pathlib import Path
 
 from romt import common
 from romt.error import (

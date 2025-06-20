@@ -1,7 +1,7 @@
 import argparse
+import typing as T
 import urllib.parse
 from pathlib import Path
-import typing as T
 
 from romt import base, common, error
 

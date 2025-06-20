@@ -1,6 +1,6 @@
-from romt import integrity
-
 import pytest
+
+from romt import integrity
 
 # Sample hash file:
 #  URL:  https://static.rust-lang.org/dist/

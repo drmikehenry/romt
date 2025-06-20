@@ -1,6 +1,6 @@
 import argparse
-from pathlib import Path
 import typing as T
+from pathlib import Path
 
 import romt.download
 from romt import error

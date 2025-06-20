@@ -2,9 +2,9 @@ import argparse
 import os
 import re
 import shutil
-from pathlib import Path
 import typing as T
 import urllib.parse
+from pathlib import Path
 
 import trio
 

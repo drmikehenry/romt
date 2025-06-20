@@ -7,8 +7,9 @@ import subprocess
 from pathlib import Path
 
 import git
-import romt.crate
 import toml
+
+import romt.crate
 
 orig_path = Path("orig").absolute()
 tmp_path = orig_path / "tmp"
