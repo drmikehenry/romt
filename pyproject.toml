@@ -1,4 +1,4 @@
-[tool.poetry]
+[project]
 name = "romt"
 version = "0.10.0"
 include = [
@@ -7,7 +7,6 @@ include = [
   { path = "README.rst", format="sdist" },
   { path = "maintainer.rst", format="sdist" },
   { path = "noxfile.py", format="sdist" },
-  { path = "poetry.lock", format="sdist" },
   { path = "requirements.txt", format="sdist" },
   { path = "romt-wrapper.py", format="sdist" },
 ]
@@ -16,12 +15,14 @@ description = """\
   programming language tools and crates for use in an offline context.\
 """
 keywords = ["Rust", "mirror", "toolchain", "crates"]
-authors = ["Michael Henry <drmikehenry@drmikehenry.com>"]
+authors = [
+    { name = "Michael Henry", email = "drmikehenry@drmikehenry.com" }
+]
 license = "MIT"
 readme = "README.rst"
 repository = "https://github.com/drmikehenry/romt"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Topic :: Utilities",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
@@ -36,68 +37,59 @@ classifiers = [
     #   https://pypi.org/classifiers/
     # "Private :: Do Not Upload",
 ]
+requires-python = ">=3.9"
+dependencies = [
+    # GitPython >= 3.0.5 is required to avoid this traceback on Windows:
+    #   Exception ignored in: <function Git.AutoInterrupt.__del__ at 0x...>
+    # See https://github.com/gitpython-developers/GitPython/issues/935.
+    "gitpython>=3.1",
+    "python-gnupg>=0.5",
+    "httpx>=0.28",
+    "toml>=0.10",
+    "trio>=0.29",
+    "exceptiongroup>=1.3.0",
+]
 
-[tool.poetry.dependencies]
-# Some packages (including `pyinstaller`), constrain their upper bound of Python
-# versions they support.  Without also constraining the upper bound here, Poetry
-# will not allow use of such packages.
-# This unfortuantely conflicts with the good advice given here:
-# - https://iscinumpy.dev/post/bound-version-constraints/
-# But the only alternative would be to drop use of `pyinstaller`.
-python = "^3.9, <3.14"
+[dependency-groups]
+nox = [
+    "nox",
+]
 
-# GitPython >= 3.0.5 is required to avoid this traceback on Windows:
-#   Exception ignored in: <function Git.AutoInterrupt.__del__ at 0x...>
-# See https://github.com/gitpython-developers/GitPython/issues/935.
-gitpython = "^3.1"
-python-gnupg = "^0.5"
-httpx = "^0.28"
-toml = "^0.10"
-trio = "^0.29"
-exceptiongroup = "^1.3.0"
+install = [
+    "pyinstaller>=6.13",
+    "pypiwin32>=223;sys_platform == 'windows'",
+]
 
-[tool.poetry.group.nox.dependencies]
-nox-poetry = "*"
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-gitignore",
+]
 
-[tool.poetry.group.install.dependencies]
-pyinstaller = "^6.13"
-pypiwin32 = {version = "^223", platform = "win32"}
-twine = "*"
+type_check = [
+    "mypy",
+    # As of mypy 0.900, mypy no longer bundles the stubs for third-party
+    # libraries that reside in the typeshed project. Add these "types-" packages
+    # here if you depend on them (e.g. `types-requests`).
+    # See: http://mypy-lang.blogspot.com/2021/06/mypy-0900-released.html
+    #      https://github.com/python/typeshed/tree/main/stubs
+    "types-toml",
+    "types-setuptools",
+]
 
-[tool.poetry.group.test.dependencies]
-pytest = "*"
-pytest-cov = "*"
-pytest-gitignore = "*"
+lint = [
+  "ruff",
+]
 
-[tool.poetry.group.type_check.dependencies]
-mypy = "*"
-# As of mypy 0.900, mypy no longer bundles the stubs for third-party libraries
-# that reside in the typeshed project. Add these "types-" packages here if you
-# depend on them (e.g. `types-requests`).
-# See: http://mypy-lang.blogspot.com/2021/06/mypy-0900-released.html
-#      https://github.com/python/typeshed/tree/main/stubs
-types-toml = "*"
-types-setuptools = "*"
+[tool.uv]
+default-groups = "all"
 
-[tool.poetry.group.lint.dependencies]
-ruff = "*"
-
-[tool.poetry.scripts]
+[project.scripts]
 romt = "romt.cli:main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-##############################################################################
-# Source formatting
-
-[tool.black]
-line-length = 79
-target-version = ["py38"]
-
-##############################################################################
-# Style checking
+requires = ["uv_build>=0.7.19,<0.8.0"]
+build-backend = "uv_build"
 
 [tool.ruff]
 line-length = 79
@@ -124,20 +116,14 @@ inline-quotes = "double"
 [tool.ruff.lint.mccabe]
 max-complexity = 15
 
-##############################################################################
-# Type checking
-
 [tool.mypy]
 strict = true
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
     "gnupg"
 ]
-ignore_missing_imports = true
-
-##############################################################################
-# Coverage support
 
 [tool.coverage.run]
 branch = true

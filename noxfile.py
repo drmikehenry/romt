@@ -1,15 +1,13 @@
-from pathlib import Path
 import platform
-from tempfile import NamedTemporaryFile
-import typing as T
 import re
 import shutil
 import sys
 import textwrap
+import typing as T
+from pathlib import Path
 
 import nox
-from nox import parametrize
-from nox_poetry import Session, session
+from nox import Session, parametrize, session
 
 nox.options.error_on_external_run = True
 nox.options.reuse_existing_virtualenvs = True
@@ -79,8 +77,7 @@ def test(s: Session) -> None:
 
 
 # For some sessions, set `venv_backend="none"` to simply execute scripts within
-# the existing Poetry environment. This requires that `nox` is run via
-# `poetry run nox ...` or in a `poetry shell`.
+# the existing `uv` environment.
 @session(venv_backend="none")
 def fmt(s: Session) -> None:
     s.run("ruff", "check", ".", "--select", "I", "--fix")
@@ -112,8 +109,11 @@ def type_check(s: Session) -> None:
 @session(venv_backend="none")
 def req_check(s: Session) -> None:
     expected = s.run_always(
-        "poetry",
-        "export",
+        "uv",
+        "pip",
+        "compile",
+        "--quiet",
+        "pyproject.toml",
         external=True,
         silent=True,
     )
@@ -126,38 +126,39 @@ def req_check(s: Session) -> None:
 
 @session(venv_backend="none")
 def req_fix(s: Session) -> None:
-    s.run_always(
-        "poetry",
-        "export",
-        "-o",
-        "requirements.txt",
-        external=True,
-        silent=True,
-    )
+    with open("requirements.txt", "w") as out_file:
+        s.run_always(
+            "uv",
+            "pip",
+            "compile",
+            "--quiet",
+            "pyproject.toml",
+            stdout=out_file,
+            external=True,
+        )
 
 
-# Note: This `reuse_venv` does not yet have effect due to:
-#   https://github.com/wntrblm/nox/issues/488
-@session(reuse_venv=False)
+@session
 def licenses(s: Session) -> None:
-    # Generate a unique temporary file name. Poetry cannot write to the temp
-    # file directly on Windows, so only use the name and allow Poetry to
-    # re-create it.
-    with NamedTemporaryFile() as t:
-        requirements_path = Path(t.name)
-
-    # Install dependencies without installing the package itself:
-    #   https://github.com/cjolowicz/nox-poetry/issues/680
-    s.run_always(
-        "poetry",
-        "export",
-        "--without-hashes",
-        f"--output={requirements_path}",
-        external=True,
+    # Install only main dependencies for license report.
+    s.run_install(
+        "uv",
+        "sync",
+        "--locked",
+        "--no-default-groups",
+        "--no-install-project",
+        f"--python={s.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": s.virtualenv.location},
     )
-    s.install("pip-licenses", "-r", str(requirements_path))
+    s.run_install(
+        "uv",
+        "pip",
+        "install",
+        "pip-licenses",
+        f"--python={s.virtualenv.location}",
+        env={"UV_PROJECT_ENVIRONMENT": s.virtualenv.location},
+    )
     s.run("pip-licenses", *s.posargs)
-    requirements_path.unlink()
 
 
 @session(venv_backend="none")
@@ -173,27 +174,34 @@ def build(s: Session) -> None:
     dist_path = Path("dist") / target_platform
     work_path = Path("build") / target_platform
     github_path = Path("dist") / "github"
-    dist_exe_path = dist_path / ("romt" + suffix)
-    github_exe_path = github_path / f"romt-{version}-{target_platform}{suffix}"
-
     rmtree(dist_path)
     rmtree(work_path)
     github_path.mkdir(parents=True, exist_ok=True)
-    github_exe_path.unlink(missing_ok=True)
+    s.run("uv", "sync")
 
-    s.run("poetry", "install")
-    args = ["pyinstaller"]
-    args.append("--onefile")
-    args.extend(["--name", "romt"])
-    args.extend(["--distpath", str(dist_path)])
-    args.extend(["--specpath", str(work_path)])
-    args.extend(["--workpath", str(work_path)])
-    args.append("--add-data=../../README.rst:romt")
-    args.extend(["--log-level", "WARN"])
-    args.append("romt-wrapper.py")
-    s.run(*args)
-    s.log(f"copy {dist_exe_path} -> {github_exe_path}")
-    shutil.copy(dist_exe_path, github_exe_path)
+    def _build_helper(entry_point: str) -> None:
+        dist_exe_path = dist_path / (entry_point + suffix)
+        github_exe_path = (
+            github_path / f"{entry_point}-{version}-{target_platform}{suffix}"
+        )
+        github_exe_path.unlink(missing_ok=True)
+
+        args = ["pyinstaller"]
+        args.append("--onefile")
+        args.extend(["--name", entry_point])
+        args.extend(["--distpath", str(dist_path)])
+        args.extend(["--specpath", str(work_path)])
+        args.extend(["--workpath", str(work_path)])
+        # Copy metadata so that `importlib.metadata.version("romt"))` works.
+        args.extend(["--copy-metadata", "romt"])
+        args.append(f"--add-data=../../README.rst:{entry_point}")
+        args.extend(["--log-level", "WARN"])
+        args.append(f"{entry_point}-wrapper.py")
+        s.run(*args)
+        s.log(f"copy {dist_exe_path} -> {github_exe_path}")
+        shutil.copy(dist_exe_path, github_exe_path)
+
+    _build_helper("romt")
 
 
 @session(venv_backend="none")
@@ -219,23 +227,20 @@ def build_linux(s: Session) -> None:
 @session(venv_backend="none")
 def release(s: Session) -> None:
     version = get_project_version()
-    tar_path = Path("dist") / f"romt-{version}.tar.gz"
-    whl_path = Path("dist") / f"romt-{version}-py3-none-any.whl"
     rmtree(Path("dist"))
     rmtree(Path("build"))
     s.log("NOTE: safe to perform Windows steps now...")
-    s.run("poetry", "install")
+    s.run("uv", "sync")
     # Build the `romt` executable for Linux:
     build_linux(s)
-    s.run("poetry", "build")
-    s.run("twine", "check", str(tar_path), str(whl_path))
+    s.run("uv", "build")
     print(
         textwrap.dedent(
             f"""
         ** Remaining manual steps:
 
         On Windows machine:
-          poetry run nox -s build
+          uv run nox -s build
         Alternatively, unzip from CI:
           unzip -d dist/ dist-windows-latest.zip
 
@@ -244,7 +249,8 @@ def release(s: Session) -> None:
           git push; git push --tags
 
         Upload to PyPI:
-          poetry run twine upload {tar_path} {whl_path}
+          PYPI_PASSWORD=<TOKEN PASSWORD>
+          uv publish -u __token__ -p "$PYPI_PASSWORD"
 
         Create Github release for {version} from tree:
           dist/github/

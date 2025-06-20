@@ -1,0 +1,29 @@
+name: setup-uv-nox
+description: Setup Uv with Python and Nox
+
+inputs:
+  uv-version:
+    description: Uv version
+    required: false
+  python-version:
+    description: Python version
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      # Caching is enabled by default for GitHub-hosted runners:
+      #   https://github.com/astral-sh/setup-uv?tab=readme-ov-file#enable-caching
+      with:
+        version: "${{ inputs.uv-version || '0.7.19' }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "${{ inputs.python-version || '3.13' }}"
+
+    - name: Install Nox
+      run: uv sync --locked --only-group nox
+      shell: bash

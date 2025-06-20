@@ -43,7 +43,7 @@ Alternative Tooling
 Requirements
 ============
 
-- Python 3.8+ for running ``romt`` (requires some packages from pypi.org).
+- Python 3.9+ for running ``romt`` (requires some packages from pypi.org).
 - Git is required for manipulating the crates.io-index repository.
 - Internet-connected computer for initial downloading (Linux, Windows, Mac
   [#]_).
@@ -89,8 +89,7 @@ Option 2: Install from Python Package Index
 
 Romt is also available in the Python Package Index (PyPI).
 
-- Download ``romt`` source and all dependencies on a host with direct Internet
-  access:
+- Download ``romt`` and all dependencies on a host with direct Internet access:
 
   - Prepare ``romt`` download area:
 
@@ -99,30 +98,11 @@ Romt is also available in the Python Package Index (PyPI).
       mkdir romt
       cd romt
 
-  - Download poetry and dependencies:
+  - Download ``romt`` with dependencies:
 
     .. code-block:: sh
 
-      pip download poetry
-
-  - Download the ``romt`` source:
-
-    .. code-block:: sh
-
-      pip download --no-binary :all: --no-deps romt
-
-  - Unpack the ``romt`` source tarball ``romt-*.tar.gz``:
-
-    .. code-block:: sh
-
-      # Example for Linux:
-      tar -zxf romt-*.tar.gz
-
-  - Download the dependencies from ``requirements.txt``:
-
-    .. code-block:: sh
-
-      pip download -r romt-*/requirements.txt
+      pip download romt
 
 - If installing to an offline host, transfer the entire ``romt/`` download area
   to that host.
@@ -149,24 +129,8 @@ Option 3: Work with source
 If desired, the source may be cloned from Github and installed into a virtual
 environment.
 
-- Install Poetry globally as described in the documentation:
-  https://python-poetry.org/docs/#installation
-
-  Include the ``poetry-plugin-export`` plugin as well.  Assuming ``pipx`` was
-  used for installation of poetry itself, this is done via::
-
-    pipx inject poetry poetry-plugin-export
-
-  This plugin is needed for generating a ``requirements.txt`` file.
-
-  Optionally include the ``poetry-plugin-shell`` plugin as well.  Assuming
-  ``pipx`` was used for installation of poetry itself, this is done via::
-
-    pipx inject poetry poetry-plugin-shell
-
-  This plugin is needed for running ``poetry shell``.  This is optional, as
-  ``poetry run some_command`` can be used to run ``some_command`` instead of
-  doing ``poetry shell`` followed by ``some_command``.
+- Install ``uv`` globally, perhaps as documented at:
+  https://docs.astral.sh/uv/getting-started/installation/
 
 - Clone source:
 
@@ -175,15 +139,15 @@ environment.
     git clone https://github.com/drmikehenry/romt
     cd romt
 
-- Run a Poetry install (which creates a virtual environment installed with Romt
-  and all dependencies)::
+- Use uv to create a virtual environment installed with Romt and all
+  dependencies::
 
-    poetry install
+    uv sync
 
-- Optionally build an executable for your platform; this requires ``poetry run``
-  to run ``nox`` within the Poetry virtual environment::
+- Optionally build an executable for your platform; this requires ``uv run``
+  to run ``nox`` within the virtual environment::
 
-    poetry run nox -s build
+    uv run nox -s build
 
   Find executables in ``dist/`` tree based on your platform, e.g.::
 
