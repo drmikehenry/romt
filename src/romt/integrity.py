@@ -40,7 +40,7 @@ def parse_hash_text(hash_text: str) -> T.Tuple[str, str]:
     # treated as a text file for the first format and a binary file for the
     # second format.  The default behavior for `sha256sum` is unfortunately
     # to assume text files, so it's common for the two-space delimiter to be
-    # present even thought the file must be treated as binary on non-Unix
+    # present even though the file must be treated as binary on non-Unix
     # systems.  We'll allow both formats, but always generate binary format.
     if hash_text.endswith("\n"):
         hash_text = hash_text[:-1]
