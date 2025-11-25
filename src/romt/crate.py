@@ -25,6 +25,7 @@ except ImportError:
     # We're not actually trying to catch any exception; just dodging a linter
     # warning.
     raise
+import git.exc
 import git.objects
 import git.remote
 import toml
