@@ -5,8 +5,8 @@ History
 Version 0.9.0
 =============
 
-- Fix default for ``toolchain --url`` to be ``$RUST_DIST_SERVER/dist``.
-  Previously this erroneously defaulted to ``$RUST_DIST_SERVER``.
+- Fix default for ``toolchain --url`` to be ``$RUSTUP_DIST_SERVER/dist``.
+  Previously this erroneously defaulted to ``$RUSTUP_DIST_SERVER``.
 
 - Provide control over SSL verification via environment variables:
 

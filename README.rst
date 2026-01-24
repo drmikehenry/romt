@@ -629,7 +629,7 @@ without the need to download all toolchain components for that target.
 Rust provides toolchain files in the ``dist/`` subdirectory of the Rust dist
 server.  The dist server defaults to ``https://static.rust-lang.org``, but this
 default may be overridden in Rust tooling and in Romt by setting the environment
-variable ``RUST_DIST_SERVER``.  If ``RUST_DIST_SERVER`` is unset, files are by
+variable ``RUSTUP_DIST_SERVER``.  If ``RUSTUP_DIST_SERVER`` is unset, files are by
 default downloaded from ``https://static.rust-lang.org/dist``; otherwise, file
 are by default downloaded from ``$RUSTUP_DIST_SERVER/dist``.  This default
 download URL may be changed via the option ``--url <URL>`` (e.g., ``romt
