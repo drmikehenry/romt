@@ -43,7 +43,7 @@ Alternative Tooling
 Requirements
 ============
 
-- Python 3.9+ for running ``romt`` (requires some packages from pypi.org).
+- Python 3.10+ for running ``romt`` (requires some packages from pypi.org).
 - Git is required for manipulating the crates.io-index repository.
 - Internet-connected computer for initial downloading (Linux, Windows, Mac
   [#]_).
