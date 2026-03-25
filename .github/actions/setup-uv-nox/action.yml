@@ -22,7 +22,7 @@ runs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "${{ inputs.python-version || '3.13' }}"
+        python-version: "${{ inputs.python-version || '3.14' }}"
 
     - name: Install Nox
       run: uv sync --locked --only-group nox

@@ -61,7 +61,7 @@ def rmtree(path: Path) -> None:
         shutil.rmtree(path)
 
 
-@session(python=["3.9", "3.10", "3.11", "3.12", "3.13"])
+@session(python=["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"])
 def test(s: Session) -> None:
     s.install(".", "pytest", "pytest-cov")
     s.run(
