@@ -33,18 +33,24 @@ def hash_file(path: Path) -> str:
 
 
 def parse_hash_text(hash_text: str) -> T.Tuple[str, str]:
-    # Expected format: text with line in one of two formats:
+    # Expected format: text with line in one of these formats:
     #   <sha256>  filename
     #   <sha256> *filename
+    #   <sha256>
     # According to the `sha256sum` utility documentation, `filename` was
     # treated as a text file for the first format and a binary file for the
     # second format.  The default behavior for `sha256sum` is unfortunately
     # to assume text files, so it's common for the two-space delimiter to be
     # present even though the file must be treated as binary on non-Unix
-    # systems.  We'll allow both formats, but always generate binary format.
+    # systems.  We'll allow both of those formats, but always generate binary
+    # format.
+    # Note that `rustup` for Windows does not include a filename in the
+    # `.sha256` file, so we must allow for having only `<sha256>` as well.
     if hash_text.endswith("\n"):
         hash_text = hash_text[:-1]
-    m = re.search(r"^(?P<hash>[0-9a-fA-F]{64}) [ *](?P<name>.*)$", hash_text)
+    m = re.search(
+        r"^(?P<hash>[0-9a-fA-F]{64})( [ *](?P<name>.+?))?\s*$", hash_text
+    )
     if not m:
         raise ValueError(f"invalid {hash_text=}")
     return m.group("hash"), m.group("name")

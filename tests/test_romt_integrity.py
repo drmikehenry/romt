@@ -10,6 +10,7 @@ from romt import integrity
 #  Format:
 #    - text file:   64-character hash string, two spaces, filename.
 #    - binary file: 64-character hash string, space, asterisk, filename.
+#    - has-only file: 64-character hash string
 
 
 def test_parse_hash_text() -> None:
@@ -42,6 +43,16 @@ def test_parse_hash_text() -> None:
     hash_text = f"{expected_hash} {expected_name}"
     with pytest.raises(ValueError):
         integrity.parse_hash_text(hash_text)
+
+    # Hash-only:
+    hash_text = f"{expected_hash}"
+    hash, name = integrity.parse_hash_text(hash_text)
+    assert hash == expected_hash
+
+    # Hash-only, trailing spaces:
+    hash_text = f"{expected_hash}    "
+    hash, name = integrity.parse_hash_text(hash_text)
+    assert hash == expected_hash
 
 
 def test_format_hash_text() -> None:
