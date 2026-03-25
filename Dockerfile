@@ -7,7 +7,7 @@ RUN apt update \
   && rm -rf /var/lib/apt/lists/*
 
 ARG ROMT_UV_VERSION="0.10.8"
-ARG ROMT_UV_PYTHON_VERSION="3.14"
+ARG ROMT_UV_PYTHON_VERSION="3.13"
 ARG ROMT_UV_PACKAGE="uv-x86_64-unknown-linux-musl.tar.gz"
 ARG ROMT_UV_DOWNLOAD_BASE="https://github.com/astral-sh/uv/releases/download"
 ARG ROMT_UV_URL="$ROMT_UV_DOWNLOAD_BASE/$ROMT_UV_VERSION/$ROMT_UV_PACKAGE"
