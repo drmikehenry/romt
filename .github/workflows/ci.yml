@@ -13,7 +13,7 @@ jobs:
         python-version: [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Uv with Python and Nox
         uses: ./.github/actions/setup-uv-nox
@@ -30,7 +30,7 @@ jobs:
         nox-session: ["lint", "type_check"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Uv with Python and Nox
         uses: ./.github/actions/setup-uv-nox
