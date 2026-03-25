@@ -2,6 +2,24 @@
 History
 *******
 
+Version 0.10.0
+==============
+
+- Handle keyboard interrupt correctly for use with Trio's nursery support.
+
+- Convert from Poetry to uv.
+
+- Fix regression in downloading ``rustup`` for Windows.  On Windows only, the
+  ``.sha256`` files contain only the SHA256 sum and not a filename (unlike
+  rustup other platforms, and toolchains and crates for all platforms). Relax
+  the tightened parsing logic added in v0.9.0 for this case.
+
+- Add support for Python 3.14.
+
+- Remove support for Python 3.9.
+
+- Update Github action versions for CI.
+
 Version 0.9.0
 =============
 
