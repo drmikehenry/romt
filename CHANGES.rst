@@ -2,6 +2,28 @@
 History
 *******
 
+Version 0.10.2
+==============
+
+- ``CHANGES.rst`` wasn't updated for version 0.10.1, so re-releasing.
+
+Version 0.10.1
+==============
+
+- Update to newer dependencies.  Use ``uv export`` idea to ensure dependencies
+  aren't too new for an out-of-date offline PyPI mirror; see ``maintainer.rst``
+  for details.
+
+- Upgrade Docker build image to Ubuntu 16.04.
+
+  Ubuntu 14.04 uses glibc 2.19, making it useful for supporting old Linux
+  distros; but it requires the ugly hack ``docker build --network=host`` for DNS
+  to work properly. Instead, upgrade to Ubuntu 16.04 (so that binaries still
+  work on that distro).  Ubuntu 16.04 uses Glibc 2.23, which is older than
+  CentOS Glibc (2.28), so CentOS 8 will be usable as well. Also use Python 3.14
+  for the build.
+
+
 Version 0.10.0
 ==============
 
