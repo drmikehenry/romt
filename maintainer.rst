@@ -101,3 +101,56 @@ Testing with fake crate INDEX
     romt crate -v config
     # Import each time:
     romt crate -v --archive ../export/crates.tar.gz import
+
+Use specific versions of dependencies
+=====================================
+
+For use on an offline network with a PyPI mirror that may be somewhat out of
+date, it's useful to run ``uv lock --upgrade`` on the offline network lock to
+ensure all versions are available on that mirror.  The list of chosen versions
+may then be exported and used to constrain the published ``uv.lock`` file to
+old-enough versions.
+
+- On offline network, lock via::
+
+    uv lock --upgrade
+
+- Export chosen versions via::
+
+    uv export \
+      --quiet \
+      --format requirements-txt \
+      --no-annotate \
+      --no-hashes \
+      --no-editable > constraints.txt
+
+  This generates lines such as::
+
+    altgraph==0.17.5
+    anyio==4.12.1
+    argcomplete==3.6.3
+    ...
+
+- Bring ``constraints.txt`` to the online network.
+
+- Edit ``pyproject.toml`` and add the contents of ``constraints.txt`` as
+  follows::
+
+    [tool.uv]
+    override-dependencies = [
+        "altgraph==0.17.5",
+        "anyio==4.12.1",
+        "argcomplete==3.6.3",
+        ...
+    ]
+
+- Lock the dependencies using these constraints::
+
+    uv lock
+
+  This generates a new ``uv.lock`` file with the correct versions.
+
+- Remove the temporary ``override-dependencies`` section from ``pyproject.toml``
+  and re-lock (to remove some noise from ``uv.lock``)::
+
+    uv lock
