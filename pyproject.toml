@@ -1,6 +1,6 @@
 [project]
 name = "romt"
-version = "0.10.0"
+version = "0.10.1"
 include = [
   { path = "CHANGES.rst", format="sdist" },
   { path = "LICENSE.rst", format="sdist" },
