@@ -19,13 +19,13 @@ authors = [
     { name = "Michael Henry", email = "drmikehenry@drmikehenry.com" }
 ]
 license = "MIT"
+license-files = ["LICENSE.rst"]
 readme = "README.rst"
 repository = "https://github.com/drmikehenry/romt"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Utilities",
     "Environment :: Console",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",

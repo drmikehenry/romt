@@ -25,6 +25,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --no-install-package romt
 
 COPY README.rst \
+  LICENSE.rst \
   maintainer.rst \
   noxfile.py \
   romt-wrapper.py \
