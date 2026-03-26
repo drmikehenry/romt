@@ -10,7 +10,7 @@ from romt import integrity
 #  Format:
 #    - text file:   64-character hash string, two spaces, filename.
 #    - binary file: 64-character hash string, space, asterisk, filename.
-#    - has-only file: 64-character hash string
+#    - hash-only file: 64-character hash string
 
 
 def test_parse_hash_text() -> None:
