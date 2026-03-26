@@ -110,10 +110,11 @@ def type_check(s: Session) -> None:
 def req_check(s: Session) -> None:
     expected = s.run_always(
         "uv",
-        "pip",
-        "compile",
-        "--quiet",
-        "pyproject.toml",
+        "export",
+        "-q",
+        "--no-hashes",
+        "--format",
+        "requirements-txt",
         external=True,
         silent=True,
     )
@@ -129,10 +130,11 @@ def req_fix(s: Session) -> None:
     with open("requirements.txt", "w") as out_file:
         s.run_always(
             "uv",
-            "pip",
-            "compile",
-            "--quiet",
-            "pyproject.toml",
+            "export",
+            "-q",
+            "--no-hashes",
+            "--format",
+            "requirements-txt",
             stdout=out_file,
             external=True,
         )
