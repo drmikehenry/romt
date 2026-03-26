@@ -212,7 +212,7 @@ def build_linux(s: Session) -> None:
     # `success_codes` to prevent `nox` failure if the
     # container does not exist and `docker rm` fails.
     s.run("docker", "rm", "romt-build", success_codes=[0, 1], silent=True)
-    s.run("docker", "build", ".", "-t", "romt-build", "--network=host")
+    s.run("docker", "build", ".", "-t", "romt-build")
     s.run(
         "docker",
         "run",
