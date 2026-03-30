@@ -2,6 +2,11 @@
 History
 *******
 
+Version 0.10.3
+==============
+
+- Add retry loop for downloading to handle transient HTTP errors.
+
 Version 0.10.2
 ==============
 

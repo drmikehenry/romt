@@ -58,13 +58,20 @@ class Downloader:
     async def _adownload(self, url: str, dest_path: Path) -> None:
         common.vvprint(f"[downloadurl] {dest_path} <- {url}")
         common.make_dirs_for(dest_path)
-        try:
-            with dest_path.open("wb") as f:
-                await self.adownload_fileobj(url, f)
-        except error.DownloadError:
-            if dest_path.is_file():
-                dest_path.unlink()
-            raise
+        num_attempts = 3
+        attempt = 0
+        while True:
+            try:
+                with dest_path.open("wb") as f:
+                    await self.adownload_fileobj(url, f)
+                break
+            except error.DownloadError as e:
+                if dest_path.is_file():
+                    dest_path.unlink()
+                attempt += 1
+                if attempt == num_attempts:
+                    raise
+                common.eprint(f"retrying {dest_path} after {e}")
 
     async def adownload(self, url: str, dest_path: Path) -> None:
         if dest_path.is_file():

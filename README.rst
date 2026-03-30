@@ -2406,7 +2406,7 @@ Download timeouts
 -----------------
 
 Romt 0.3.0 added support for simultaneous downloading based on the ``httpx``
-library; this came with a a default timeout of five seconds which can lead to
+library; this came with a default timeout of five seconds which can lead to
 ``ConnectTimeout`` or ``ReadTimeout`` errors depending on choice of
 ``--num-jobs`` and network characteristics (see
 https://github.com/drmikehenry/romt/issues/16).
@@ -2414,6 +2414,13 @@ https://github.com/drmikehenry/romt/issues/16).
 Romt 0.4.0 adds a ``--timeout`` switch to control this timeout, and changed the
 default value to sixty seconds.  If timeouts are still occurring, use a larger
 timeout value (or use ``--timeout 0`` to disable timeouts altogether).
+
+Retries
+-------
+
+Romt 0.10.3 added a retry loop for failing downloads.  Each download will be
+attempted up to three times before failing with an error.  This helps handle
+transient server errors.
 
 Reference
 =========
