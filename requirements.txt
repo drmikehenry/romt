@@ -92,7 +92,7 @@ pluggy==1.6.0
     #   pytest-cov
 pycparser==3.0 ; implementation_name != 'PyPy' and implementation_name != 'pypy' and os_name == 'nt'
     # via cffi
-pygments==2.19.2
+pygments==2.20.0
     # via pytest
 pyinstaller==6.19.0
 pyinstaller-hooks-contrib==2026.3
