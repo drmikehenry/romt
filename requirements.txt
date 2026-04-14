@@ -98,7 +98,7 @@ pyinstaller==6.19.0
 pyinstaller-hooks-contrib==2026.3
     # via pyinstaller
 pypiwin32==223 ; sys_platform == 'windows'
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   pytest-cov
     #   pytest-gitignore
